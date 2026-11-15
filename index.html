@@ -6,123 +6,23 @@
 <title>CITY LIFE UAE</title>
 
 <style>
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  overflow: hidden;
-  background: #a9cce5;
-  font-family: Arial;
-  touch-action: none;
-}
-
-canvas {
-  display: block;
-}
-
-#hud {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  display: flex;
-  justify-content: space-between;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.box {
-  background: #101923dd;
-  color: white;
-  padding: 12px;
-  border-radius: 12px;
-}
-
-#logo {
-  color: #f4c45e;
-  font-size: 17px;
-  font-weight: bold;
-}
-
-#speed {
-  font-size: 25px;
-  font-weight: bold;
-  text-align: center;
-}
-
-#cameraBtn {
-  position: fixed;
-  right: 12px;
-  top: 105px;
-  padding: 12px;
-  border-radius: 12px;
-  z-index: 3;
-}
-
-button {
-  color: white;
-  background: #172b43dd;
-  border: 2px solid white;
-  font-weight: bold;
-  touch-action: none;
-}
-
-#controls {
-  position: fixed;
-  bottom: 20px;
-  left: 15px;
-  right: 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  z-index: 3;
-}
-
-#stick {
-  width: 115px;
-  height: 115px;
-  border-radius: 50%;
-  background: #ffffff35;
-  border: 2px solid white;
-  position: relative;
-}
-
-#knob {
-  position: absolute;
-  width: 48px;
-  height: 48px;
-  left: 31px;
-  top: 31px;
-  border-radius: 50%;
-  background: white;
-}
-
-.pedals {
-  display: flex;
-  gap: 10px;
-}
-
-.pedal {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-}
-
-#gas { background: #159b59; }
-#brake { background: #bd3030; }
-
-#status {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #101923ed;
-  color: white;
-  padding: 16px;
-  border-radius: 12px;
-  z-index: 5;
-  text-align: center;
-}
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;background:#a9cce5;font-family:Arial;touch-action:none}
+canvas{display:block}
+#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;z-index:2;pointer-events:none}
+.box{background:#101923dd;color:white;padding:12px;border-radius:12px}
+#logo{color:#f4c45e;font-size:17px;font-weight:bold}
+#speed{font-size:25px;font-weight:bold;text-align:center}
+#cameraBtn{position:fixed;right:12px;top:105px;padding:12px;border-radius:12px;z-index:3}
+button{color:white;background:#172b43dd;border:2px solid white;font-weight:bold;touch-action:none}
+#controls{position:fixed;bottom:20px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:end;z-index:3}
+#stick{width:115px;height:115px;border-radius:50%;background:#ffffff35;border:2px solid white;position:relative}
+#knob{position:absolute;width:48px;height:48px;left:31px;top:31px;border-radius:50%;background:white}
+.pedals{display:flex;gap:10px}
+.pedal{width:70px;height:70px;border-radius:50%}
+#gas{background:#159b59}
+#brake{background:#bd3030}
+#status{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#101923ed;color:white;padding:16px;border-radius:12px;z-index:5;text-align:center}
 </style>
 </head>
 
@@ -135,7 +35,6 @@ button {
     <div id="logo">CITY LIFE UAE</div>
     <div>DUBAI</div>
   </div>
-
   <div class="box">
     <div id="speed">0</div>
     <div>KM/H</div>
@@ -145,10 +44,7 @@ button {
 <button id="cameraBtn">📷 كاميرا خارجية</button>
 
 <div id="controls">
-  <div id="stick">
-    <div id="knob"></div>
-  </div>
-
+  <div id="stick"><div id="knob"></div></div>
   <div class="pedals">
     <button class="pedal" id="brake">فرامل</button>
     <button class="pedal" id="gas">بنزين</button>
@@ -160,21 +56,14 @@ button {
 import * as THREE from 'https://esm.sh/three@0.185.0';
 import { GLTFLoader } from 'https://esm.sh/three@0.185.0/examples/jsm/loaders/GLTFLoader.js';
 
-// المشهد
 const scene = new THREE.Scene();
-
 scene.background = new THREE.Color(0xa9cce5);
 scene.fog = new THREE.Fog(0xa9cce5, 250, 1000);
 
-// الكاميرا
 const camera = new THREE.PerspectiveCamera(
-  65,
-  innerWidth / innerHeight,
-  0.1,
-  1500
+  65, innerWidth / innerHeight, 0.1, 1500
 );
 
-// العرض
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
   powerPreference: 'high-performance'
@@ -185,10 +74,8 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-
 document.body.appendChild(renderer.domElement);
 
-// الإضاءة
 scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2));
 
 const sunlight = new THREE.DirectionalLight(0xffffff, 3);
@@ -196,7 +83,7 @@ sunlight.position.set(-50, 100, 50);
 sunlight.castShadow = true;
 scene.add(sunlight);
 
-// الأرضية فقط
+// الأرضية
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(2000, 2000),
   new THREE.MeshStandardMaterial({
@@ -214,6 +101,8 @@ const car = new THREE.Group();
 scene.add(car);
 
 let carReady = false;
+let wheels = [];
+let wheelSpin = 0;
 
 const loader = new GLTFLoader();
 
@@ -247,15 +136,34 @@ function loadCar(index) {
       const scale = 4.5 / maxSize;
 
       model.scale.setScalar(scale);
-
       model.position.x = -center.x * scale;
       model.position.y = -box.min.y * scale;
       model.position.z = -center.z * scale;
 
       model.traverse(object => {
+
         if (object.isMesh) {
           object.castShadow = true;
           object.receiveShadow = true;
+        }
+
+        // البحث عن التواير حسب أسمائها
+        const name = object.name.toLowerCase();
+
+        if (
+          object.isObject3D &&
+          (
+            name.includes('wheel') ||
+            name.includes('tire') ||
+            name.includes('tyre') ||
+            name.includes('reifen') ||
+            name.includes('rad')
+          )
+        ) {
+          wheels.push({
+            object: object,
+            originalRotation: object.rotation.clone()
+          });
         }
       });
 
@@ -263,6 +171,9 @@ function loadCar(index) {
       carReady = true;
 
       document.getElementById('status').style.display = 'none';
+
+      console.log('Car loaded:', carFiles[index]);
+      console.log('Wheels detected:', wheels.map(w => w.object.name));
 
     },
 
@@ -279,7 +190,6 @@ loadCar(0);
 // حركة السيارة
 let speed = 0;
 let heading = 0;
-
 let throttle = 0;
 let braking = 0;
 let steering = 0;
@@ -293,7 +203,6 @@ let dragging = false;
 let lastX = 0;
 let lastY = 0;
 
-// تدوير الكاميرا باللمس
 renderer.domElement.addEventListener('pointerdown', e => {
   dragging = true;
   lastX = e.clientX;
@@ -397,7 +306,7 @@ window.addEventListener('keyup', e => {
   keys[e.key.toLowerCase()] = false;
 });
 
-// الكاميرا
+// تبديل الكاميرا
 let cameraMode = 0;
 
 document.getElementById('cameraBtn').addEventListener('click', () => {
@@ -450,6 +359,14 @@ function animate(now) {
     car.position.z += Math.cos(heading) * speed * dt;
   }
 
+  // دوران التواير مع حركة السيارة
+  wheelSpin += speed * dt * 0.35;
+
+  wheels.forEach(wheel => {
+    wheel.object.rotation.x =
+      wheel.originalRotation.x + wheelSpin;
+  });
+
   // الكاميرا الخارجية
   if (cameraMode === 0) {
 
@@ -471,7 +388,6 @@ function animate(now) {
 
   } else {
 
-    // منظور تقريبي من داخل السيارة
     const target = new THREE.Vector3(
       car.position.x + Math.sin(heading) * 0.3,
       car.position.y + 1.45,
@@ -495,7 +411,7 @@ function animate(now) {
 
 requestAnimationFrame(animate);
 
-// حجم الشاشة
+// تغيير حجم الشاشة
 window.addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
