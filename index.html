@@ -68,12 +68,14 @@ const renderer=new THREE.WebGLRenderer({
   antialias:true,
   powerPreference:'high-performance'
 });
+
 renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.shadowMap.enabled=true;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1;
+
 document.body.appendChild(renderer.domElement);
 
 scene.add(new THREE.HemisphereLight(0xffffff,0x777777,2));
@@ -87,23 +89,24 @@ const ground=new THREE.Mesh(
   new THREE.PlaneGeometry(2000,2000),
   new THREE.MeshStandardMaterial({color:0x777b7e,roughness:1})
 );
+
 ground.rotation.x=-Math.PI/2;
 ground.position.y=-.08;
 ground.receiveShadow=true;
 scene.add(ground);
 
-// جسم السيارة ونظام الميلان المرئي
+// السيارة
 const car=new THREE.Group();
 scene.add(car);
 
 const bodyPivot=new THREE.Group();
 car.add(bodyPivot);
 
-// تحميل سيارة المرسيدس
+// تحميل ملف جي كلاس بالاسم الصحيح
 const loader=new GLTFLoader();
 
 loader.load(
-  './mercedes_benz_g-class_w263(1).glb',
+  './%D8%AC%D9%8A%20%D9%83%D9%84%D8%A7%D8%B3.glb',
 
   gltf=>{
     const model=gltf.scene;
@@ -136,12 +139,11 @@ loader.load(
   undefined,
 
   error=>{
-    console.error(error);
+    console.error('Car loading error:',error);
+
     status.innerHTML=
       'ما قدرنا نحمل السيارة.<br>'+
-      'تأكد إن اسم الملف بالضبط:<br>'+
-      'mercedes_benz_g-class_w263(1).glb<br>'+
-      'وإنه في الصفحة الرئيسية للمشروع.';
+      'تأكد أن ملف جي كلاس موجود في الصفحة الرئيسية للمشروع.';
   }
 );
 
@@ -269,7 +271,7 @@ function hold(id,cb){
 hold('gas',v=>throttle=v?1:0);
 hold('brake',v=>braking=v?1:0);
 
-// أزرار لوحة المفاتيح
+// لوحة المفاتيح
 const keys={};
 
 addEventListener('keydown',e=>{
@@ -280,7 +282,7 @@ addEventListener('keyup',e=>{
   keys[e.key.toLowerCase()]=false;
 });
 
-// نظام القيادة والتعليق المرئي
+// القيادة والتعليق المرئي
 let last=performance.now();
 
 function animate(now){
@@ -297,7 +299,6 @@ function animate(now){
   if(keys.a||keys.arrowleft)steer=-1;
   if(keys.d||keys.arrowright)steer=1;
 
-  // التسارع والفرملة والرجوع
   if(gas){
     if(speed<0){
       speed=Math.min(0,speed+13*dt);
@@ -316,7 +317,6 @@ function animate(now){
 
   speed=THREE.MathUtils.clamp(speed,-7,32);
 
-  // حركة السيارة والتوجيه
   if(Math.abs(speed)>.08){
     const steerPower=THREE.MathUtils.lerp(
       1,
@@ -340,9 +340,7 @@ function animate(now){
 
   car.rotation.y=heading;
 
-  // التعليق المرئي:
-  // ميلان المقدمة عند الفرملة والتسارع
-  // وميلان الهيكل في اللفات
+  // نظام التعليق المرئي
   const targetPitch=
     gas&&speed>=0 ? -.025 :
     brake&&speed>0 ? .045 : 0;
@@ -397,7 +395,7 @@ function animate(now){
     );
 
   }else{
-    // الكاميرا الداخلية التقريبية
+    // كاميرا داخلية تقريبية
     const front=new THREE.Vector3(
       car.position.x+Math.sin(heading)*.3,
       car.position.y+1.45,
