@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>CITY LIFE UAE - أساسيات القيادة</title>
+<title>CITY LIFE UAE</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bc9e8;font-family:Arial;touch-action:none}
@@ -68,16 +68,15 @@ const renderer=new THREE.WebGLRenderer({
   antialias:true,
   powerPreference:'high-performance'
 });
-
 renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.shadowMap.enabled=true;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1;
-
 document.body.appendChild(renderer.domElement);
 
+// الإضاءة
 scene.add(new THREE.HemisphereLight(0xffffff,0x777777,2));
 
 const sun=new THREE.DirectionalLight(0xffffff,3);
@@ -85,24 +84,112 @@ sun.position.set(-80,150,80);
 sun.castShadow=true;
 scene.add(sun);
 
+// الأرض
 const ground=new THREE.Mesh(
   new THREE.PlaneGeometry(2000,2000),
   new THREE.MeshStandardMaterial({color:0x777b7e,roughness:1})
 );
-
 ground.rotation.x=-Math.PI/2;
 ground.position.y=-.08;
 ground.receiveShadow=true;
 scene.add(ground);
 
+// ==========================
+// إنشاء الشارع
+// ==========================
+
+const roadGroup=new THREE.Group();
+scene.add(roadGroup);
+
+function roadBox(w,h,d,x,y,z,color,roughness=0.9){
+  const mesh=new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshStandardMaterial({color,roughness})
+  );
+  mesh.position.set(x,y,z);
+  mesh.receiveShadow=true;
+  mesh.castShadow=true;
+  roadGroup.add(mesh);
+  return mesh;
+}
+
+// الإسفلت
+roadBox(14,.12,10000,0,0,0,0x292d32);
+
+// الأكتاف الجانبية
+roadBox(.25,.13,10000,-7.05,.02,0,0x55585b);
+roadBox(.25,.13,10000,7.05,.02,0,0x55585b);
+
+// خطوط حدود المسارات
+roadBox(.13,.025,10000,-6.25,.09,0,0xffffff);
+roadBox(.13,.025,10000,6.25,.09,0,0xffffff);
+
+// الخط المتقطع في المنتصف
+for(let z=-5000;z<5000;z+=12){
+  roadBox(.16,.035,5,0,.095,z,0xf5f5f5);
+}
+
+// الأرصفة
+roadBox(3,.28,10000,-8.8,.08,0,0xb9b9b9);
+roadBox(3,.28,10000,8.8,.08,0,0xb9b9b9);
+
+// حواف الأرصفة
+roadBox(.18,.35,10000,-10.25,.12,0,0x777777);
+roadBox(.18,.35,10000,10.25,.12,0,0x777777);
+
+// فواصل الرصيف
+for(let z=-5000;z<5000;z+=4){
+  roadBox(2.8,.025,.08,-8.8,.235,z,0x999999);
+  roadBox(2.8,.025,.08,8.8,.235,z,0x999999);
+}
+
+// ==========================
+// أعمدة الإنارة
+// ==========================
+
+function createLamp(x,z){
+  const pole=new THREE.Mesh(
+    new THREE.CylinderGeometry(.075,.11,6,10),
+    new THREE.MeshStandardMaterial({color:0x555b60,metalness:.65,roughness:.4})
+  );
+  pole.position.set(x,3,z);
+  pole.castShadow=true;
+  roadGroup.add(pole);
+
+  const arm=new THREE.Mesh(
+    new THREE.BoxGeometry(1.5,.09,.1),
+    new THREE.MeshStandardMaterial({color:0x555b60,metalness:.5})
+  );
+  arm.position.set(x+(x<0?-.65:.65),5.8,z);
+  roadGroup.add(arm);
+
+  const lamp=new THREE.Mesh(
+    new THREE.BoxGeometry(.55,.16,.35),
+    new THREE.MeshStandardMaterial({
+      color:0xfff1c4,
+      emissive:0xffd987,
+      emissiveIntensity:1.2
+    })
+  );
+  lamp.position.set(x+(x<0?-1.25:1.25),5.7,z);
+  roadGroup.add(lamp);
+}
+
+for(let z=-4900;z<=4900;z+=45){
+  createLamp(-10.8,z);
+  createLamp(10.8,z);
+}
+
+// ==========================
 // السيارة
+// ==========================
+
 const car=new THREE.Group();
 scene.add(car);
 
 const bodyPivot=new THREE.Group();
 car.add(bodyPivot);
 
-// تحميل ملف جي كلاس بالاسم الصحيح
 const loader=new GLTFLoader();
 
 loader.load(
@@ -116,7 +203,6 @@ loader.load(
     const center=box.getCenter(new THREE.Vector3());
 
     const scale=4.3/Math.max(size.x,size.y,size.z);
-
     model.scale.setScalar(scale);
 
     model.position.set(
@@ -139,15 +225,15 @@ loader.load(
   undefined,
 
   error=>{
-    console.error('Car loading error:',error);
-
-    status.innerHTML=
-      'ما قدرنا نحمل السيارة.<br>'+
-      'تأكد أن ملف جي كلاس موجود في الصفحة الرئيسية للمشروع.';
+    console.error(error);
+    status.innerHTML='تعذر تحميل السيارة. تأكد من وجود ملف جي كلاس.glb بجانب index.html.';
   }
 );
 
+// ==========================
 // الكاميرا
+// ==========================
+
 let cameraMode=0;
 let cameraAngle=0;
 let cameraHeight=3.2;
@@ -161,9 +247,7 @@ const cameraBtn=document.getElementById('cameraBtn');
 
 cameraBtn.addEventListener('click',()=>{
   cameraMode=1-cameraMode;
-
-  cameraBtn.textContent=
-    cameraMode===0
+  cameraBtn.textContent=cameraMode===0
     ?'📷 الكاميرا: خارجية'
     :'📷 الكاميرا: داخلية';
 });
@@ -174,9 +258,7 @@ renderer.domElement.addEventListener('pointerdown',e=>{
   lastY=e.clientY;
 });
 
-window.addEventListener('pointerup',()=>{
-  dragging=false;
-});
+window.addEventListener('pointerup',()=>dragging=false);
 
 window.addEventListener('pointermove',e=>{
   if(!dragging||cameraMode===1)return;
@@ -185,23 +267,17 @@ window.addEventListener('pointermove',e=>{
 
   cameraHeight=THREE.MathUtils.clamp(
     cameraHeight+(e.clientY-lastY)*.025,
-    1.5,
-    9
+    1.5,9
   );
 
   lastX=e.clientX;
   lastY=e.clientY;
 });
 
-renderer.domElement.addEventListener('wheel',e=>{
-  cameraDistance=THREE.MathUtils.clamp(
-    cameraDistance+e.deltaY*.01,
-    4,
-    16
-  );
-});
-
+// ==========================
 // التحكم
+// ==========================
+
 let throttle=0;
 let braking=0;
 let steering=0;
@@ -239,7 +315,6 @@ function moveStick(e){
   }
 
   steering=dx/max;
-
   knob.style.left=(31+dx)+'px';
   knob.style.top=(31+dy)+'px';
 }
@@ -271,18 +346,15 @@ function hold(id,cb){
 hold('gas',v=>throttle=v?1:0);
 hold('brake',v=>braking=v?1:0);
 
-// لوحة المفاتيح
 const keys={};
 
-addEventListener('keydown',e=>{
-  keys[e.key.toLowerCase()]=true;
-});
+addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 
-addEventListener('keyup',e=>{
-  keys[e.key.toLowerCase()]=false;
-});
+// ==========================
+// القيادة والتعليق
+// ==========================
 
-// القيادة والتعليق المرئي
 let last=performance.now();
 
 function animate(now){
@@ -295,22 +367,15 @@ function animate(now){
   const brake=braking||(keys.s||keys.arrowdown?1:0);
 
   let steer=steering;
-
   if(keys.a||keys.arrowleft)steer=-1;
   if(keys.d||keys.arrowright)steer=1;
 
   if(gas){
-    if(speed<0){
-      speed=Math.min(0,speed+13*dt);
-    }else{
-      speed+=7.5*dt;
-    }
+    if(speed<0)speed=Math.min(0,speed+13*dt);
+    else speed+=7.5*dt;
   }else if(brake){
-    if(speed>0){
-      speed=Math.max(0,speed-16*dt);
-    }else{
-      speed-=3.8*dt;
-    }
+    if(speed>0)speed=Math.max(0,speed-16*dt);
+    else speed-=3.8*dt;
   }else{
     speed*=Math.pow(.985,dt*60);
   }
@@ -319,9 +384,7 @@ function animate(now){
 
   if(Math.abs(speed)>.08){
     const steerPower=THREE.MathUtils.lerp(
-      1,
-      .38,
-      Math.min(Math.abs(speed)/32,1)
+      1,.38,Math.min(Math.abs(speed)/32,1)
     );
 
     heading-=steer*1.05*steerPower*dt*Math.sign(speed);
@@ -340,37 +403,21 @@ function animate(now){
 
   car.rotation.y=heading;
 
-  // نظام التعليق المرئي
-  const targetPitch=
-    gas&&speed>=0 ? -.025 :
-    brake&&speed>0 ? .045 : 0;
-
-  const targetRoll=
-    -steer*Math.min(Math.abs(speed)/32,1)*.055;
-
-  const bob=
-    Math.sin(now*.012)*
-    Math.min(Math.abs(speed)/32,.35)*.012;
+  // التعليق المرئي
+  const targetPitch=gas&&speed>=0?-.025:brake&&speed>0?.045:0;
+  const targetRoll=-steer*Math.min(Math.abs(speed)/32,1)*.055;
+  const bob=Math.sin(now*.012)*Math.min(Math.abs(speed)/32,.35)*.012;
 
   bodyPivot.rotation.x=THREE.MathUtils.damp(
-    bodyPivot.rotation.x,
-    targetPitch,
-    5,
-    dt
+    bodyPivot.rotation.x,targetPitch,5,dt
   );
 
   bodyPivot.rotation.z=THREE.MathUtils.damp(
-    bodyPivot.rotation.z,
-    targetRoll,
-    4,
-    dt
+    bodyPivot.rotation.z,targetRoll,4,dt
   );
 
   bodyPivot.position.y=THREE.MathUtils.damp(
-    bodyPivot.position.y,
-    bob,
-    5,
-    dt
+    bodyPivot.position.y,bob,5,dt
   );
 
   // الكاميرا الخارجية
@@ -383,29 +430,21 @@ function animate(now){
       car.position.z-Math.cos(angle)*cameraDistance
     );
 
-    camera.position.lerp(
-      desired,
-      1-Math.pow(.001,dt)
-    );
+    camera.position.lerp(desired,1-Math.pow(.001,dt));
 
     camera.lookAt(
       car.position.x,
       car.position.y+1.1,
       car.position.z
     );
-
   }else{
-    // كاميرا داخلية تقريبية
     const front=new THREE.Vector3(
       car.position.x+Math.sin(heading)*.3,
       car.position.y+1.45,
       car.position.z+Math.cos(heading)*.3
     );
 
-    camera.position.lerp(
-      front,
-      1-Math.pow(.001,dt)
-    );
+    camera.position.lerp(front,1-Math.pow(.001,dt));
 
     camera.lookAt(
       car.position.x+Math.sin(heading)*12,
@@ -422,13 +461,11 @@ function animate(now){
 
 requestAnimationFrame(animate);
 
-// تغيير حجم الشاشة
 addEventListener('resize',()=>{
   camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
 });
-
 </script>
 </body>
 </html>
