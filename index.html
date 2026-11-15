@@ -15,116 +15,64 @@ body{
  touch-action:none
 }
 canvas{display:block}
-
 #hud{
- position:fixed;
- top:12px;
- left:12px;
- right:12px;
- display:flex;
- justify-content:space-between;
- pointer-events:none;
- z-index:2
+ position:fixed;top:12px;left:12px;right:12px;
+ display:flex;justify-content:space-between;
+ pointer-events:none;z-index:2
 }
 .box{
- background:#101923dd;
- padding:11px 14px;
- border-radius:12px;
- color:white;
- font-size:13px
+ background:#101923dd;padding:11px 14px;
+ border-radius:12px;color:white;font-size:13px
 }
-#logo{
- font-size:18px;
- color:#f4c45e;
- font-weight:bold
-}
-#speed{
- font-size:25px;
- font-weight:bold
-}
+#logo{font-size:18px;color:#f4c45e;font-weight:bold}
+#speed{font-size:25px;font-weight:bold}
 #controls{
- position:fixed;
- bottom:18px;
- left:15px;
- right:15px;
- display:flex;
- justify-content:space-between;
- align-items:end;
- z-index:3
+ position:fixed;bottom:18px;left:15px;right:15px;
+ display:flex;justify-content:space-between;
+ align-items:end;z-index:3
 }
 #stick{
- width:115px;
- height:115px;
- border-radius:50%;
- background:#ffffff35;
- border:2px solid #ffffff99;
- position:relative;
- touch-action:none
+ width:115px;height:115px;border-radius:50%;
+ background:#ffffff35;border:2px solid #ffffff99;
+ position:relative;touch-action:none
 }
 #knob{
- position:absolute;
- width:48px;
- height:48px;
- left:31px;
- top:31px;
- border-radius:50%;
- background:white
+ position:absolute;width:48px;height:48px;
+ left:31px;top:31px;border-radius:50%;background:white
 }
 .pedals{display:flex;gap:9px}
 button{
- border:2px solid white;
- color:white;
- font-weight:bold;
- background:#172b43dd;
- touch-action:none
+ border:2px solid white;color:white;font-weight:bold;
+ background:#172b43dd;touch-action:none
 }
-.pedal{
- width:70px;
- height:70px;
- border-radius:50%
-}
+.pedal{width:70px;height:70px;border-radius:50%}
 #gas{background:#159b59}
 #brake{background:#bd3030}
 #cameraBtn{
- position:fixed;
- right:14px;
- top:105px;
- padding:12px;
- border-radius:12px;
- z-index:4
+ position:fixed;right:14px;top:105px;
+ padding:12px;border-radius:12px;z-index:4
 }
 #status{
- position:fixed;
- top:50%;
- left:50%;
+ position:fixed;top:50%;left:50%;
  transform:translate(-50%,-50%);
- background:#101923ed;
- color:white;
- padding:16px 20px;
- border-radius:12px;
- z-index:5;
- text-align:center;
- line-height:1.7;
+ background:#101923ed;color:white;
+ padding:16px 20px;border-radius:12px;
+ z-index:5;text-align:center;line-height:1.7;
  max-width:85%
 }
 #help{
- position:fixed;
- bottom:145px;
- left:50%;
+ position:fixed;bottom:145px;left:50%;
  transform:translateX(-50%);
- color:white;
- background:#101923aa;
- padding:7px 12px;
- border-radius:10px;
- font-size:12px;
- white-space:nowrap
+ color:white;background:#101923aa;
+ padding:7px 12px;border-radius:10px;
+ font-size:12px;white-space:nowrap
 }
 </style>
 </head>
 
 <body>
 
-<div id="status">جاري تحميل المرسيدس...</div>
+<div id="status">جاري تحميل اللعبة...</div>
 
 <div id="hud">
  <div class="box">
@@ -140,14 +88,10 @@ button{
 </div>
 
 <button id="cameraBtn">📷 الكاميرا: خارجية</button>
-
 <div id="help">اسحب الشاشة لتدوير الكاميرا</div>
 
 <div id="controls">
- <div id="stick">
-  <div id="knob"></div>
- </div>
-
+ <div id="stick"><div id="knob"></div></div>
  <div class="pedals">
   <button class="pedal" id="brake">فرامل</button>
   <button class="pedal" id="gas">بنزين</button>
@@ -163,10 +107,10 @@ const status=document.getElementById('status');
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x9bc9e8);
-scene.fog=new THREE.Fog(0x9bc9e8,180,900);
+scene.fog=new THREE.Fog(0x9bc9e8,180,1200);
 
 const camera=new THREE.PerspectiveCamera(
- 65,innerWidth/innerHeight,.1,1500
+ 65,innerWidth/innerHeight,.1,2000
 );
 
 const renderer=new THREE.WebGLRenderer({
@@ -192,9 +136,7 @@ scene.add(sun);
 
 function mat(color,roughness=.8,metalness=0){
  return new THREE.MeshStandardMaterial({
-  color,
-  roughness,
-  metalness
+  color,roughness,metalness
  });
 }
 
@@ -204,7 +146,6 @@ const ground=new THREE.Mesh(
  new THREE.PlaneGeometry(2000,2000),
  mat(0xb4a991)
 );
-
 ground.rotation.x=-Math.PI/2;
 ground.position.y=-.1;
 scene.add(ground);
@@ -215,7 +156,6 @@ const road=new THREE.Mesh(
  new THREE.PlaneGeometry(500,32),
  mat(0x292d32)
 );
-
 road.rotation.x=-Math.PI/2;
 road.position.y=.02;
 scene.add(road);
@@ -225,36 +165,77 @@ road2.rotation.z=Math.PI/2;
 scene.add(road2);
 
 for(let i=-240;i<=240;i+=12){
-
  const line=new THREE.Mesh(
   new THREE.BoxGeometry(5,.035,.18),
   mat(0xffffff)
  );
-
  line.position.set(i,.1,0);
  scene.add(line);
 }
 
-// المباني
+// مباني المدينة المؤقتة
 
 for(let x=-180;x<=180;x+=35){
-
  for(let z of [-65,65]){
-
   const h=20+Math.random()*55;
-
   const b=new THREE.Mesh(
    new THREE.BoxGeometry(20,h,20),
    mat([0xb9b2a5,0x8999a5,0xd0c6b5][
     Math.floor(Math.random()*3)
    ])
   );
-
   b.position.set(x,h/2,z);
   b.castShadow=true;
   scene.add(b);
  }
 }
+
+// برج خليفة الحقيقي من ملف GLB
+
+const loader=new GLTFLoader();
+
+loader.load(
+ './%D8%A8%D8%B1%D8%AC%20%D8%AE%D9%84%D9%8A%D9%81%D9%87.glb',
+
+ gltf=>{
+  const burj=gltf.scene;
+
+  const box=new THREE.Box3().setFromObject(burj);
+  const size=box.getSize(new THREE.Vector3());
+  const center=box.getCenter(new THREE.Vector3());
+
+  if(size.y>0){
+   const targetHeight=120;
+   const scale=targetHeight/size.y;
+
+   burj.scale.setScalar(scale);
+
+   burj.position.set(
+    40-center.x*scale,
+    -box.min.y*scale,
+    -75-center.z*scale
+   );
+  }
+
+  burj.traverse(obj=>{
+   if(obj.isMesh){
+    obj.castShadow=true;
+    obj.receiveShadow=true;
+   }
+  });
+
+  scene.add(burj);
+  console.log('Burj Khalifa loaded');
+
+ },
+
+ undefined,
+
+ error=>{
+  console.error('Burj Khalifa loading error:',error);
+  status.innerHTML='تعذر تحميل برج خليفة. تأكد من اسم الملف ومكانه.';
+ }
+);
 
 // السيارة
 
@@ -262,10 +243,6 @@ const car=new THREE.Group();
 scene.add(car);
 
 let carReady=false;
-
-const loader=new GLTFLoader();
-
-// نجرب أسماء الملفات المحتملة تلقائياً
 
 const carFiles=[
  './%D8%AC%D9%8A%20%D9%83%D9%84%D8%A7%D8%B3.glb',
@@ -277,22 +254,16 @@ const carFiles=[
 function loadCar(index){
 
  if(index>=carFiles.length){
-
   status.innerHTML=
    'تعذر تحميل السيارة.<br>'+
-   'تأكد من اسم ملف GLB في GitHub.<br>'+
-   'وتأكد أنه في الصفحة الرئيسية للمشروع.';
-
+   'تأكد من اسم ملف GLB في GitHub.';
   return;
  }
-
- status.innerHTML='جاري تحميل السيارة...<br>'+carFiles[index];
 
  loader.load(
   carFiles[index],
 
   gltf=>{
-
    const model=gltf.scene;
 
    const box=new THREE.Box3().setFromObject(model);
@@ -303,47 +274,34 @@ function loadCar(index){
    const scale=4.3/maxLength;
 
    model.scale.setScalar(scale);
-
    model.position.x=-center.x*scale;
    model.position.y=-box.min.y*scale;
    model.position.z=-center.z*scale;
 
    model.traverse(obj=>{
-
     if(obj.isMesh){
      obj.castShadow=true;
      obj.receiveShadow=true;
     }
-
    });
 
    car.add(model);
    carReady=true;
 
    status.style.display='none';
-
    console.log('Car loaded:',carFiles[index]);
-
   },
 
   undefined,
 
   error=>{
-
-   console.warn(
-    'Failed to load:',
-    carFiles[index],
-    error
-   );
-
+   console.warn('Failed to load:',carFiles[index]);
    loadCar(index+1);
-
   }
  );
 }
 
 loadCar(0);
-
 car.position.set(0,0,0);
 
 // الكاميرا
@@ -360,24 +318,19 @@ let lastY=0;
 const cameraBtn=document.getElementById('cameraBtn');
 
 cameraBtn.addEventListener('click',()=>{
-
  cameraMode=1-cameraMode;
-
  cameraBtn.textContent=
   cameraMode===0
   ?'📷 الكاميرا: خارجية'
   :'📷 الكاميرا: داخلية';
-
 });
 
 // تدوير الكاميرا
 
 renderer.domElement.addEventListener('pointerdown',e=>{
-
  dragging=true;
  lastX=e.clientX;
  lastY=e.clientY;
-
 });
 
 window.addEventListener('pointerup',()=>{
@@ -385,7 +338,6 @@ window.addEventListener('pointerup',()=>{
 });
 
 window.addEventListener('pointermove',e=>{
-
  if(!dragging||cameraMode===1)return;
 
  const dx=e.clientX-lastX;
@@ -394,26 +346,19 @@ window.addEventListener('pointermove',e=>{
  cameraAngle-=dx*.006;
 
  cameraHeight=THREE.MathUtils.clamp(
-  cameraHeight+dy*.025,
-  1.5,
-  9
+  cameraHeight+dy*.025,1.5,9
  );
 
  lastX=e.clientX;
  lastY=e.clientY;
-
 });
 
 // تقريب وإبعاد
 
 renderer.domElement.addEventListener('wheel',e=>{
-
  cameraDistance=THREE.MathUtils.clamp(
-  cameraDistance+e.deltaY*.01,
-  4,
-  16
+  cameraDistance+e.deltaY*.01,4,16
  );
-
 });
 
 // التحكم
@@ -430,23 +375,16 @@ const knob=document.getElementById('knob');
 let stickId=null;
 
 stick.addEventListener('pointerdown',e=>{
-
  stickId=e.pointerId;
  stick.setPointerCapture(e.pointerId);
  moveStick(e);
-
 });
 
 stick.addEventListener('pointermove',e=>{
-
- if(e.pointerId===stickId){
-  moveStick(e);
- }
-
+ if(e.pointerId===stickId)moveStick(e);
 });
 
 function moveStick(e){
-
  const r=stick.getBoundingClientRect();
 
  let dx=e.clientX-(r.left+r.width/2);
@@ -461,45 +399,32 @@ function moveStick(e){
  }
 
  steering=dx/max;
-
  knob.style.left=(31+dx)+'px';
  knob.style.top=(31+dy)+'px';
-
 }
 
 function resetStick(){
-
  stickId=null;
  steering=0;
-
  knob.style.left='31px';
  knob.style.top='31px';
-
 }
 
 stick.addEventListener('pointerup',resetStick);
 stick.addEventListener('pointercancel',resetStick);
 
 function hold(id,callback){
-
  const el=document.getElementById(id);
 
  el.addEventListener('pointerdown',e=>{
-
   e.preventDefault();
   el.setPointerCapture(e.pointerId);
   callback(true);
-
  });
 
  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{
-
-  el.addEventListener(ev,()=>{
-   callback(false);
-  });
-
+  el.addEventListener(ev,()=>callback(false));
  });
-
 }
 
 hold('gas',v=>throttle=v?1:0);
@@ -547,14 +472,11 @@ function animate(now){
  speed=THREE.MathUtils.clamp(speed,-8,35);
 
  if(Math.abs(speed)>.1){
-
   heading-=steer*1.1*dt*Math.sign(speed);
-
   car.rotation.y=heading;
 
   car.position.x+=Math.sin(heading)*speed*dt;
   car.position.z+=Math.cos(heading)*speed*dt;
-
  }
 
  // الكاميرا الخارجية
@@ -564,18 +486,13 @@ function animate(now){
   const angle=heading+cameraAngle;
 
   const desired=new THREE.Vector3(
-
    car.position.x-Math.sin(angle)*cameraDistance,
-
    car.position.y+cameraHeight,
-
    car.position.z-Math.cos(angle)*cameraDistance
-
   );
 
   camera.position.lerp(
-   desired,
-   1-Math.pow(.001,dt)
+   desired,1-Math.pow(.001,dt)
   );
 
   camera.lookAt(
@@ -586,8 +503,6 @@ function animate(now){
 
  }else{
 
-  // موضع تقريبي لكاميرا السائق
-
   const front=new THREE.Vector3(
    car.position.x+Math.sin(heading)*.3,
    car.position.y+1.45,
@@ -595,8 +510,7 @@ function animate(now){
   );
 
   camera.position.lerp(
-   front,
-   1-Math.pow(.001,dt)
+   front,1-Math.pow(.001,dt)
   );
 
   const look=new THREE.Vector3(
@@ -606,14 +520,12 @@ function animate(now){
   );
 
   camera.lookAt(look);
-
  }
 
  document.getElementById('speed').textContent=
   Math.round(Math.abs(speed)*3.6);
 
  renderer.render(scene,camera);
-
 }
 
 requestAnimationFrame(animate);
@@ -621,12 +533,9 @@ requestAnimationFrame(animate);
 // تغيير حجم الشاشة
 
 addEventListener('resize',()=>{
-
  camera.aspect=innerWidth/innerHeight;
  camera.updateProjectionMatrix();
-
  renderer.setSize(innerWidth,innerHeight);
-
 });
 
 </script>
