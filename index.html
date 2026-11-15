@@ -4,36 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>CITY LIFE UAE - DUBAI</title>
-
 <style>
 *{box-sizing:border-box}
 body{margin:0;overflow:hidden;background:#9bc9e8;font-family:Arial;touch-action:none}
 canvas{display:block}
-#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none}
+#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none;z-index:2}
 .box{background:#101923dd;padding:11px 14px;border-radius:12px;color:white;font-size:13px}
 #logo{font-size:18px;color:#f4c45e;font-weight:bold}
 #speed{font-size:25px;font-weight:bold}
-#controls{position:fixed;bottom:20px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:end}
+#controls{position:fixed;bottom:20px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:end;z-index:2}
 #stick{width:120px;height:120px;border-radius:50%;background:#ffffff35;border:2px solid #ffffff99;position:relative;touch-action:none}
-#knob{position:absolute;width:50px;height:50px;left:33px;top:33px;border-radius:50%;background:#fff}
+#knob{position:absolute;width:50px;height:50px;left:33px;top:33px;border-radius:50%;background:white}
 .pedals{display:flex;gap:10px}
 button{width:72px;height:72px;border-radius:50%;border:2px solid white;color:white;font-weight:bold;background:#172b43dd;touch-action:none}
 #gas{background:#159b59}
 #brake{background:#bd3030}
-#message{position:fixed;inset:0;background:#111b29;color:white;display:grid;place-items:center;text-align:center;z-index:5}
-#message small{color:#aaa}
+#status{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#101923dd;color:white;padding:15px 20px;border-radius:12px;z-index:5}
 </style>
 </head>
-
 <body>
 
-<div id="message">
- <div>
-  <h2>CITY LIFE UAE</h2>
-  <p>جاري تحميل المدينة والسيارة...</p>
-  <small>قد يستغرق التحميل بعض الوقت</small>
- </div>
-</div>
+<div id="status">جاري تجهيز المدينة...</div>
 
 <div id="hud">
  <div class="box">
@@ -56,106 +47,87 @@ button{width:72px;height:72px;border-radius:50%;border:2px solid white;color:whi
 </div>
 
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js';
-import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from 'https://esm.sh/three@0.185.0';
 
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x9bc9e8);
-scene.fog=new THREE.Fog(0x9bc9e8,180,650);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9bc9e8);
+scene.fog = new THREE.Fog(0x9bc9e8,180,650);
 
-const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,1000);
+const camera = new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,1000);
 
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
 renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.outputColorSpace=THREE.SRGBColorSpace;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1;
+renderer.shadowMap.enabled = true;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
 
 scene.add(new THREE.HemisphereLight(0xe5f3ff,0x6b6658,2));
 
-const sun=new THREE.DirectionalLight(0xffedcf,3);
+const sun = new THREE.DirectionalLight(0xffedcf,3);
 sun.position.set(-100,180,100);
-sun.castShadow=true;
-sun.shadow.mapSize.set(1024,1024);
+sun.castShadow = true;
 scene.add(sun);
 
-function material(color,roughness=.8,metalness=0){
+function mat(color,roughness=.8,metalness=0){
  return new THREE.MeshStandardMaterial({color,roughness,metalness});
 }
 
-const ground=new THREE.Mesh(
+function box(w,h,d,color,x,y,z){
+ const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));
+ m.position.set(x,y,z);
+ m.castShadow = true;
+ m.receiveShadow = true;
+ scene.add(m);
+ return m;
+}
+
+// الأرض
+const ground = new THREE.Mesh(
  new THREE.PlaneGeometry(1200,1200),
- material(0xb5aa91)
+ mat(0xb5aa91)
 );
-ground.rotation.x=-Math.PI/2;
-ground.receiveShadow=true;
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
 scene.add(ground);
 
-function cube(w,h,d,color,x,y,z){
- const mesh=new THREE.Mesh(
-  new THREE.BoxGeometry(w,h,d),
-  material(color)
- );
- mesh.position.set(x,y,z);
- mesh.castShadow=true;
- mesh.receiveShadow=true;
- scene.add(mesh);
- return mesh;
-}
-
-// Roads
-cube(800,.12,42,0x292c31,0,.02,0);
-cube(42,.12,800,0x292c31,0,.03,0);
+// الشوارع
+box(800,.12,42,0x292c31,0,.02,0);
+box(42,.12,800,0x292c31,0,.03,0);
 
 for(let i=-380;i<380;i+=13){
- cube(5,.035,.22,0xe8dfc9,i,.1,0);
- cube(.22,.035,5,0xe8dfc9,0,.1,i);
+ box(5,.035,.22,0xe8dfc9,i,.1,0);
+ box(.22,.035,5,0xe8dfc9,0,.1,i);
 }
 
-cube(800,.25,3,0xb9b4a8,0,.12,23);
-cube(800,.25,3,0xb9b4a8,0,.12,-23);
-cube(3,.25,800,0xb9b4a8,23,.12,0);
-cube(3,.25,800,0xb9b4a8,-23,.12,0);
+// المباني
+const colors=[0xc5b9a7,0x9babb4,0xd4c8b5,0x777f86,0xb5a58e];
 
-// Buildings
 function building(x,z,w,d,h,color){
- const group=new THREE.Group();
+ const group = new THREE.Group();
 
- const body=new THREE.Mesh(
+ const body = new THREE.Mesh(
   new THREE.BoxGeometry(w,h,d),
-  material(color,.55)
+  mat(color,.55)
  );
  body.position.y=h/2;
  body.castShadow=true;
  group.add(body);
 
- const rows=Math.floor(h/3.5);
- const cols=Math.floor(w/2.5);
-
- for(let r=0;r<rows;r++){
-  for(let c=0;c<cols;c++){
-   const windowMesh=new THREE.Mesh(
+ for(let r=0;r<Math.floor(h/3.5);r++){
+  for(let c=0;c<Math.floor(w/2.5);c++){
+   const win = new THREE.Mesh(
     new THREE.BoxGeometry(.85,1.3,.06),
-    material(0x8eb9c9,.25,.25)
+    mat(0x8eb9c9,.25,.25)
    );
-   windowMesh.position.set(
-    -w/2+1.3+c*2.5,
-    2+r*3.5,
-    d/2+.04
-   );
-   group.add(windowMesh);
+   win.position.set(-w/2+1.3+c*2.5,2+r*3.5,d/2+.04);
+   group.add(win);
   }
  }
 
  group.position.set(x,0,z);
  scene.add(group);
 }
-
-const colors=[0xc5b9a7,0x9babb4,0xd4c8b5,0x777f86,0xb5a58e];
 
 for(let x=-160;x<=160;x+=38){
  for(let z=-160;z<=160;z+=38){
@@ -165,51 +137,42 @@ for(let x=-160;x<=160;x+=38){
  }
 }
 
-// Tall landmark tower
-const tower=new THREE.Group();
-
-const tiers=[
- [24,20,30],
- [19,16,40],
- [15,13,45],
- [11,10,40],
- [7,7,35],
- [4,4,30]
-];
-
+// برج طويل مستوحى من أفق دبي
+const tower = new THREE.Group();
 let y=0;
-for(const [w,d,h] of tiers){
- const part=new THREE.Mesh(
+
+for(const [w,d,h] of [[24,20,30],[19,16,40],[15,13,45],[11,10,40],[7,7,35],[4,4,30]]){
+ const part = new THREE.Mesh(
   new THREE.BoxGeometry(w,h,d),
-  material(0xa8c6d5,.25,.3)
+  mat(0xa8c6d5,.25,.3)
  );
  part.position.y=y+h/2;
  tower.add(part);
  y+=h;
 }
 
-const spire=new THREE.Mesh(
+const spire = new THREE.Mesh(
  new THREE.ConeGeometry(1.3,40,12),
- material(0xc6d3d9,.3,.5)
+ mat(0xc6d3d9,.3,.5)
 );
 spire.position.y=y+20;
 tower.add(spire);
 tower.position.set(80,0,-100);
 scene.add(tower);
 
-// Palm trees
+// نخيل
 function palm(x,z){
- const trunk=new THREE.Mesh(
+ const trunk = new THREE.Mesh(
   new THREE.CylinderGeometry(.22,.4,5,8),
-  material(0x886044)
+  mat(0x886044)
  );
  trunk.position.set(x,2.5,z);
  scene.add(trunk);
 
  for(let i=0;i<7;i++){
-  const leaf=new THREE.Mesh(
+  const leaf = new THREE.Mesh(
    new THREE.BoxGeometry(.5,.15,4),
-   material(0x287344)
+   mat(0x287344)
   );
   leaf.position.set(
    x+Math.sin(i*Math.PI/3.5)*1.4,
@@ -226,43 +189,42 @@ for(let i=-130;i<140;i+=18){
  palm(i,-27);
 }
 
-// Vehicle
-const car=new THREE.Group();
+// سيارة مبدئية مصنوعة داخل اللعبة
+const car = new THREE.Group();
 scene.add(car);
 
-let carLoaded=false;
-
-const loader=new GLTFLoader();
-
-loader.load(
- 'https://threejs.org/examples/models/gltf/ferrari.glb',
- gltf=>{
-  const model=gltf.scene;
-  model.scale.setScalar(.9);
-  model.rotation.y=Math.PI;
-  model.traverse(o=>{
-   if(o.isMesh){
-    o.castShadow=true;
-    o.receiveShadow=true;
-   }
-  });
-  car.add(model);
-  carLoaded=true;
- },
- undefined,
- error=>{
-  console.error("Car model failed to load",error);
- }
+const body = new THREE.Mesh(
+ new THREE.BoxGeometry(2.2,.8,4.5),
+ mat(0x111820,.3,.5)
 );
+body.position.y=.85;
+car.add(body);
+
+const cabin = new THREE.Mesh(
+ new THREE.BoxGeometry(1.8,.85,2.2),
+ mat(0x263e50,.2,.4)
+);
+cabin.position.set(0,1.55,-.2);
+car.add(cabin);
+
+const wheels=[];
+for(const x of [-1.15,1.15]){
+ for(const z of [-1.4,1.4]){
+  const wheel = new THREE.Mesh(
+   new THREE.CylinderGeometry(.42,.42,.3,20),
+   mat(0x111111)
+  );
+  wheel.rotation.z=Math.PI/2;
+  wheel.position.set(x,.48,z);
+  car.add(wheel);
+  wheels.push(wheel);
+ }
+}
 
 car.position.set(0,0,8);
 
-// Controls
-let throttle=0;
-let braking=0;
-let steering=0;
-let speed=0;
-let heading=0;
+// التحكم
+let throttle=0,braking=0,steering=0,speed=0,heading=0;
 
 const stick=document.getElementById('stick');
 const knob=document.getElementById('knob');
@@ -319,21 +281,20 @@ const keys={};
 addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 
-// Camera
+// الكاميرا
 camera.position.set(0,7,-14);
 
 let last=performance.now();
 
 function animate(now){
  requestAnimationFrame(animate);
-
  const dt=Math.min((now-last)/1000,.04);
  last=now;
 
  const gas=throttle||(keys.w||keys.arrowup?1:0);
  const brake=braking||(keys.s||keys.arrowdown?1:0);
-
  let steer=steering;
+
  if(keys.a||keys.arrowleft)steer=-1;
  if(keys.d||keys.arrowright)steer=1;
 
@@ -349,6 +310,7 @@ function animate(now){
   car.rotation.y=heading;
   car.position.x+=Math.sin(heading)*speed*dt;
   car.position.z+=Math.cos(heading)*speed*dt;
+  wheels.forEach(w=>w.rotation.x+=speed*dt);
  }
 
  const target=new THREE.Vector3(
@@ -360,8 +322,7 @@ function animate(now){
  camera.position.lerp(target,1-Math.pow(.001,dt));
  camera.lookAt(car.position.x,car.position.y+1.2,car.position.z);
 
- document.getElementById('speed').textContent=
-  Math.round(Math.abs(speed)*3.6);
+ document.getElementById('speed').textContent=Math.round(Math.abs(speed)*3.6);
 
  renderer.render(scene,camera);
 }
@@ -374,7 +335,7 @@ addEventListener('resize',()=>{
  renderer.setSize(innerWidth,innerHeight);
 });
 
-document.getElementById('message').style.display='none';
+document.getElementById('status').style.display='none';
 </script>
 </body>
 </html>
