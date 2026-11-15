@@ -1,155 +1,1331 @@
-function makePerson(clothesColor, skinColor = 0xc58b60) {
-  const person = new THREE.Group();
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>CITY LIFE UAE</title>
+<style>
+*{box-sizing:border-box;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bc9e8;font-family:Arial;touch-action:none}
+canvas{display:block}
+#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;z-index:2;pointer-events:none;gap:8px}
+.box{background:#101923dd;padding:10px 12px;border-radius:12px;color:white;font-size:12px}
+#logo{font-size:17px;color:#f4c45e;font-weight:bold}
+#speed{font-size:24px;font-weight:bold}
+#fuel{color:#72e6a1;margin-top:4px}
+#cameraBtn,#exitBtn,#fuelBtn{position:fixed;right:14px;padding:12px;border-radius:12px;z-index:4}
+#cameraBtn{top:112px}
+#exitBtn{top:170px;background:#a56b18}
+#fuelBtn{top:228px;background:#087b45;display:none}
+#controls{position:fixed;bottom:18px;left:15px;right:15px;display:flex;flex-direction:row;direction:ltr;justify-content:space-between;align-items:end;z-index:3}
+#stick{width:115px;height:115px;border-radius:50%;background:#ffffff35;border:2px solid #ffffff99;position:relative;touch-action:none}
+#knob{position:absolute;width:48px;height:48px;left:31px;top:31px;border-radius:50%;background:white}
+.pedals{display:flex;gap:9px;direction:ltr}
+button{border:2px solid white;color:white;font-weight:bold;background:#172b43dd;touch-action:none}
+.pedal{width:70px;height:70px;border-radius:50%}
+#gas{background:#159b59}
+#brake{background:#bd3030}
+#runBtn{position:fixed;left:18px;bottom:155px;padding:15px 19px;border-radius:14px;z-index:4;background:#159b59;display:none}
+#talkBtn{position:fixed;left:50%;bottom:155px;transform:translateX(-50%);padding:14px 22px;border-radius:14px;z-index:6;background:#087bba;display:none;white-space:nowrap}
+#status{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#101923ed;color:white;padding:16px 20px;border-radius:12px;z-index:8;text-align:center;line-height:1.7;max-width:85%}
+#help{position:fixed;bottom:145px;left:50%;transform:translateX(-50%);color:white;background:#101923aa;padding:7px 12px;border-radius:10px;font-size:12px;white-space:nowrap}
+#chatBox{position:fixed;left:5%;right:5%;bottom:20px;background:#101923f5;color:white;border:2px solid #e4b34e;border-radius:18px;padding:16px;z-index:10;display:none;max-height:65%;overflow:auto}
+#chatName{font-size:19px;color:#f4c45e;font-weight:bold;margin-bottom:10px}
+#chatText{font-size:16px;line-height:1.8;margin-bottom:14px;white-space:pre-line}
+#chatChoices{display:flex;flex-direction:column;gap:8px}
+.chatChoice{padding:12px;border-radius:10px;background:#263e58;text-align:right;font-size:14px}
+#closeChat{margin-top:12px;padding:10px 16px;border-radius:10px;background:#a52e2e}
+</style>
+</head>
+<body>
 
-  const clothes = material(clothesColor);
-  const skin = material(skinColor);
-  const dark = material(0x252525);
+<div id="status">جاري تحميل المدينة والسيارة...</div>
 
-  // الجسم
-  const torso = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.29, 0.48, 5, 10),
-    clothes
+<div id="hud">
+  <div class="box">
+    <div id="logo">CITY LIFE UAE 🇦🇪</div>
+    <div id="modeText">تجربة القيادة</div>
+    <div id="money">💰 AED 5,000</div>
+    <div id="fuel">⛽ الوقود: 100%</div>
+  </div>
+  <div class="box" style="text-align:center">
+    <div id="speed">0</div>
+    <div>KM/H</div>
+  </div>
+</div>
+
+<button id="cameraBtn">📷 الكاميرا: خارجية</button>
+<button id="exitBtn">🚶 نزول من السيارة</button>
+<button id="fuelBtn">⛽ تعبئة الوقود</button>
+<button id="runBtn">🏃 اضغط للركض</button>
+<button id="talkBtn">💬 تحدث</button>
+<div id="help">اسحب الشاشة لتدوير الكاميرا</div>
+
+<div id="controls">
+  <div id="stick"><div id="knob"></div></div>
+  <div class="pedals">
+    <button class="pedal" id="brake">فرامل<br>رجوع</button>
+    <button class="pedal" id="gas">بنزين</button>
+  </div>
+</div>
+
+<div id="chatBox">
+  <div id="chatName">شخص</div>
+  <div id="chatText"></div>
+  <div id="chatChoices"></div>
+  <button id="closeChat">إغلاق المحادثة</button>
+</div>
+
+<script type="module">
+import * as THREE from 'https://esm.sh/three@0.185.0';
+import {GLTFLoader} from 'https://esm.sh/three@0.185.0/examples/jsm/loaders/GLTFLoader.js';
+
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('selectstart',e=>e.preventDefault());
+
+const $=id=>document.getElementById(id);
+const status=$('status');
+const controls=$('controls');
+const exitBtn=$('exitBtn');
+const runBtn=$('runBtn');
+const talkBtn=$('talkBtn');
+const chatBox=$('chatBox');
+const speedDisplay=$('speed');
+const modeText=$('modeText');
+const help=$('help');
+
+let money=5000;
+let fuel=100;
+
+function updateMoney(){
+  $('money').textContent='💰 AED '+money.toLocaleString('en-US');
+}
+function updateFuel(){
+  $('fuel').textContent='⛽ الوقود: '+Math.round(fuel)+'%';
+}
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x9bc9e8);
+scene.fog=new THREE.Fog(0x9bc9e8,220,950);
+
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,1800);
+
+const renderer=new THREE.WebGLRenderer({
+  antialias:true,
+  powerPreference:'high-performance'
+});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+renderer.shadowMap.enabled=true;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1;
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x777777,2));
+
+const sun=new THREE.DirectionalLight(0xffffff,3);
+sun.position.set(-80,150,80);
+sun.castShadow=true;
+scene.add(sun);
+
+const ground=new THREE.Mesh(
+  new THREE.PlaneGeometry(2000,2000),
+  new THREE.MeshStandardMaterial({color:0x777b7e,roughness:1})
+);
+ground.rotation.x=-Math.PI/2;
+ground.position.y=-.08;
+ground.receiveShadow=true;
+scene.add(ground);
+
+const roadGroup=new THREE.Group();
+scene.add(roadGroup);
+
+function material(color,roughness=.85,metalness=0){
+  return new THREE.MeshStandardMaterial({color,roughness,metalness});
+}
+
+function box(parent,w,h,d,x,y,z,color,roughness=.85){
+  const mesh=new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
+    material(color,roughness)
   );
-  torso.position.y = 1.25;
+  mesh.position.set(x,y,z);
+  mesh.castShadow=true;
+  mesh.receiveShadow=true;
+  parent.add(mesh);
+  return mesh;
+}
+
+function roadBox(w,h,d,x,y,z,color){
+  return box(roadGroup,w,h,d,x,y,z,color);
+}
+
+// الطريق والأرصفة
+roadBox(14,.12,10000,0,0,0,0x292d32);
+roadBox(.25,.13,10000,-7.05,.02,0,0x55585b);
+roadBox(.25,.13,10000,7.05,.02,0,0x55585b);
+roadBox(.13,.025,10000,-6.25,.09,0,0xffffff);
+roadBox(.13,.025,10000,6.25,.09,0,0xffffff);
+
+for(let z=-5000;z<5000;z+=12)
+  roadBox(.16,.035,5,0,.095,z,0xf5f5f5);
+
+roadBox(3,.28,10000,-8.8,.08,0,0xb9b9b9);
+roadBox(3,.28,10000,8.8,.08,0,0xb9b9b9);
+roadBox(.18,.35,10000,-10.25,.12,0,0x777777);
+roadBox(.18,.35,10000,10.25,.12,0,0x777777);
+
+for(let z=-5000;z<5000;z+=4){
+  roadBox(2.8,.025,.08,-8.8,.235,z,0x999999);
+  roadBox(2.8,.025,.08,8.8,.235,z,0x999999);
+}
+
+// أعمدة الإنارة
+function createLamp(x,z){
+  const inward=x<0?1:-1;
+
+  const pole=new THREE.Mesh(
+    new THREE.CylinderGeometry(.075,.11,6,10),
+    material(0x555b60,.4,.65)
+  );
+  pole.position.set(x,3,z);
+  roadGroup.add(pole);
+
+  const arm=box(roadGroup,1.5,.09,.1,x+inward*.65,5.8,z,0x555b60);
+  const lamp=box(roadGroup,.55,.16,.35,x+inward*1.25,5.7,z,0xfff1c4);
+  lamp.material.emissive=new THREE.Color(0xffd987);
+  lamp.material.emissiveIntensity=.7;
+}
+
+for(let z=-4900;z<=4900;z+=45){
+  createLamp(-10.8,z);
+  createLamp(10.8,z);
+}
+
+// مطبات
+function createSpeedBump(z){
+  const colors=[0xf5c400,0x202020];
+  for(let i=0;i<8;i++)
+    roadBox(1.75,.16,.65,-6.125+i*1.75,.13,z,colors[i%2]);
+}
+[-180,180,540,900,1260,1620,1980].forEach(createSpeedBump);
+
+// لوحات الطريق
+function createRoadSign(x,z,arabic,english,color){
+  const pole=new THREE.Mesh(
+    new THREE.CylinderGeometry(.07,.09,3.3,8),
+    material(0x777777,.5,.4)
+  );
+  pole.position.set(x,1.65,z);
+  roadGroup.add(pole);
+
+  const c=document.createElement('canvas');
+  c.width=512;c.height=256;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle=color;
+  ctx.fillRect(0,0,512,256);
+  ctx.strokeStyle='white';
+  ctx.lineWidth=12;
+  ctx.strokeRect(7,7,498,242);
+  ctx.fillStyle='white';
+  ctx.textAlign='center';
+  ctx.direction='rtl';
+  ctx.font='bold 45px Arial';
+  ctx.fillText(arabic,256,105);
+  ctx.direction='ltr';
+  ctx.font='bold 36px Arial';
+  ctx.fillText(english,256,175);
+
+  const panel=new THREE.Mesh(
+    new THREE.PlaneGeometry(3.5,1.75),
+    new THREE.MeshStandardMaterial({
+      map:new THREE.CanvasTexture(c),
+      side:THREE.DoubleSide
+    })
+  );
+  panel.position.set(x,3.45,z);
+  roadGroup.add(panel);
+}
+
+function createSpeedSign(x,z,limit){
+  const pole=new THREE.Mesh(
+    new THREE.CylinderGeometry(.06,.08,2.7,8),
+    material(0x777777)
+  );
+  pole.position.set(x,1.35,z);
+  roadGroup.add(pole);
+
+  const c=document.createElement('canvas');
+  c.width=256;c.height=256;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='white';
+  ctx.beginPath();
+  ctx.arc(128,128,112,0,Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle='#d71920';
+  ctx.lineWidth=18;
+  ctx.stroke();
+  ctx.fillStyle='#111';
+  ctx.font='bold 90px Arial';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText(String(limit),128,128);
+
+  const mesh=new THREE.Mesh(
+    new THREE.PlaneGeometry(1.55,1.55),
+    new THREE.MeshStandardMaterial({
+      map:new THREE.CanvasTexture(c),
+      side:THREE.DoubleSide
+    })
+  );
+  mesh.position.set(x,2.8,z);
+  roadGroup.add(mesh);
+}
+
+createRoadSign(-8.2,95,'دبي','DUBAI - EXIT 12','#087b45');
+createRoadSign(8.2,335,'عجمان','AJMAN - MAIN ROAD','#087b45');
+createRoadSign(-8.2,695,'شارع رئيسي','MAIN ROAD','#087b45');
+createSpeedSign(8.2,155,60);
+createSpeedSign(-8.2,515,80);
+createSpeedSign(8.2,875,60);
+
+// تقاطع وإشارات
+const junctionZ=420;
+roadBox(34,.12,14,0,.015,junctionZ,0x292d32);
+
+for(let x=-5.5;x<=5.5;x+=2.2)
+  roadBox(.85,.04,1.5,x,.105,junctionZ-9,0xffffff);
+
+const signalBulbs=[];
+let signalPhase=0,signalTimer=0;
+
+function createTrafficLight(x,z){
+  const pole=new THREE.Mesh(
+    new THREE.CylinderGeometry(.09,.12,5.2,10),
+    material(0x44484c,.5,.5)
+  );
+  pole.position.set(x,2.6,z);
+  roadGroup.add(pole);
+  roadBox(.55,1.65,.55,x,4.65,z,0x17191b);
+
+  [0xff2020,0xffc400,0x20c85a].forEach((color,index)=>{
+    const bulb=new THREE.Mesh(
+      new THREE.SphereGeometry(.17,16,12),
+      new THREE.MeshStandardMaterial({
+        color,
+        emissive:color,
+        emissiveIntensity:index===0?1.3:.04
+      })
+    );
+    bulb.position.set(x,5.2-index*.53,z+.29);
+    roadGroup.add(bulb);
+    signalBulbs.push({mesh:bulb,index});
+  });
+}
+
+createTrafficLight(-7.5,junctionZ-10);
+createTrafficLight(7.5,junctionZ-10);
+
+function updateTrafficLights(dt){
+  signalTimer+=dt;
+  if(signalPhase===0&&signalTimer>=6){signalPhase=1;signalTimer=0}
+  else if(signalPhase===1&&signalTimer>=2){signalPhase=2;signalTimer=0}
+  else if(signalPhase===2&&signalTimer>=6){signalPhase=0;signalTimer=0}
+
+  signalBulbs.forEach(item=>{
+    item.mesh.material.emissiveIntensity=item.index===signalPhase?1.5:.04;
+  });
+}
+
+// =========================
+// مباني المدينة
+// =========================
+
+const buildingColors=[
+  0xd8c7ad,0xe5dfd0,0xc8d0d2,0xd9d1c4,
+  0xb9c5c8,0xe4d7bd,0xc5b7a5
+];
+
+function createBuilding(x,z,w,h,d,color){
+  const group=new THREE.Group();
+  group.position.set(x,0,z);
+  scene.add(group);
+
+  box(group,w,h,d,0,h/2,0,color);
+  box(group,w+.2,.25,d+.2,0,h+.12,0,0xb4a58e);
+
+  // نوافذ الواجهة
+  const rows=Math.max(1,Math.floor(h/2.5));
+  const cols=Math.max(2,Math.floor(w/2.2));
+
+  for(let row=0;row<rows;row++){
+    for(let col=0;col<cols;col++){
+      const wx=-w/2+(col+.5)*w/cols;
+      const wy=1.4+row*2.2;
+
+      if(wy>h-.8)continue;
+
+      box(group,.85,1.05,.035,wx,wy,d/2+.025,0x6e9eae,.35);
+      box(group,.95,.09,.08,wx,wy-.55,d/2+.06,0xffffff);
+    }
+  }
+
+  // باب
+  box(group,1.1,2.1,.08,0,1.05,d/2+.07,0x574331);
+
+  // مكيفات خارجية
+  if(h>7){
+    for(let i=0;i<Math.min(3,cols);i++){
+      box(group,.8,.5,.45,-w/2+1+i*2.1,2.2,d/2+.3,0xd5d8d8);
+    }
+  }
+
+  return group;
+}
+
+// فلل ومحلات ومبانٍ موزعة على امتداد الطريق
+for(let z=-80;z<1500;z+=42){
+  const color1=buildingColors[Math.floor(Math.random()*buildingColors.length)];
+  const color2=buildingColors[Math.floor(Math.random()*buildingColors.length)];
+
+  if(Math.abs(z-570)>115){
+    createBuilding(-20,z,8,5+Math.random()*5,10,color1);
+    createBuilding(20,z+15,8,5+Math.random()*7,10,color2);
+  }
+
+  if(z%84===0){
+    createBuilding(-32,z+12,12,9+Math.random()*7,12,0xd9d0c2);
+    createBuilding(32,z-10,12,8+Math.random()*8,12,0xc9d1d3);
+  }
+}
+
+// أشجار المدينة
+function createTree(x,z){
+  const trunk=new THREE.Mesh(
+    new THREE.CylinderGeometry(.16,.23,2,8),
+    material(0x79502e)
+  );
+  trunk.position.set(x,1,z);
+  scene.add(trunk);
+
+  const leaves=new THREE.Mesh(
+    new THREE.SphereGeometry(1.15,12,10),
+    material(0x327b43)
+  );
+  leaves.position.set(x,2.7,z);
+  leaves.scale.set(1,1.2,1);
+  scene.add(leaves);
+}
+
+for(let z=-40;z<1500;z+=35){
+  createTree(-13.5,z);
+  createTree(13.5,z+16);
+}
+
+// =========================
+// محطة ADNOC
+// =========================
+
+const adnoc=new THREE.Group();
+scene.add(adnoc);
+
+// المحطة على يمين الطريق
+adnoc.position.set(27,0,570);
+
+function stationBox(w,h,d,x,y,z,color){
+  return box(adnoc,w,h,d,x,y,z,color);
+}
+
+// أرضية المحطة
+stationBox(37,.22,55,0,.05,0,0x777b7e);
+
+// مدخل ومواقف
+for(let i=0;i<7;i++){
+  stationBox(.12,.025,5,-14+i*4,.18,20,0xffffff);
+}
+
+// متجر ADNOC Oasis
+stationBox(13,5,10,9,2.7,-17,0xe9e5d8);
+stationBox(13,.65,.25,9,4.9,-11.85,0x087b45);
+stationBox(13,.25,.25,9,5.35,-11.85,0xffffff);
+
+// واجهة زجاجية
+stationBox(8,2.5,.12,9,2.3,-11.7,0x6b9fae);
+
+// باب المتجر
+stationBox(1.5,2.4,.15,9,1.35,-11.58,0x293e4b);
+
+// لوحة ADNOC
+stationBox(7,1.25,.25,9,6.2,-11.7,0x087b45);
+
+function makeTextTexture(lines,bg,fg){
+  const c=document.createElement('canvas');
+  c.width=512;c.height=256;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle=bg;
+  ctx.fillRect(0,0,512,256);
+  ctx.fillStyle=fg;
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.font='bold 65px Arial';
+  ctx.fillText(lines[0],256,95);
+  ctx.font='bold 38px Arial';
+  if(lines[1])ctx.fillText(lines[1],256,175);
+  return new THREE.CanvasTexture(c);
+}
+
+const signTexture=makeTextTexture(['ADNOC','OASIS'],'#087b45','#ffffff');
+
+const adnocSign=new THREE.Mesh(
+  new THREE.PlaneGeometry(6.7,1.3),
+  new THREE.MeshStandardMaterial({map:signTexture,side:THREE.DoubleSide})
+);
+adnocSign.position.set(9,6.2,-11.52);
+adnoc.add(adnocSign);
+
+// مظلة المضخات
+stationBox(23,.35,13,0,6,2,0xffffff);
+stationBox(23,.22,13,0,6.25,2,0x087b45);
+
+// أعمدة المظلة
+for(const x of [-10,-3,4,10]){
+  for(const z of [-3,7]){
+    stationBox(.35,6,.35,x,3,z,0x087b45);
+  }
+}
+
+// حواف المظلة
+stationBox(23,.5,.35,0,5.7,-4.5,0x087b45);
+stationBox(23,.5,.35,0,5.7,8.5,0x087b45);
+
+// مضخات الوقود
+const pumps=[];
+
+function createPump(x,z){
+  const pump=new THREE.Group();
+  pump.position.set(x,0,z);
+  adnoc.add(pump);
+
+  box(pump,1.25,2.2,.9,0,1.2,0,0xe6e9e8);
+  box(pump,1.05,.65,.08,0,1.7,.48,0x087b45);
+  box(pump,.72,.35,.06,0,1.72,.54,0xffffff);
+  box(pump,.16,.55,.1,.7,1.15,.55,0x202020);
+
+  // خرطوم الوقود
+  const hose=new THREE.Mesh(
+    new THREE.TorusGeometry(.38,.045,8,20,Math.PI),
+    material(0x202020)
+  );
+  hose.rotation.z=Math.PI/2;
+  hose.position.set(.7,1.1,.5);
+  pump.add(hose);
+
+  pumps.push(pump);
+}
+
+createPump(-7,-.2);
+createPump(0,-.2);
+createPump(7,-.2);
+
+// لوحة أسعار الوقود
+stationBox(3,.25,.3,15,4,10,0x087b45);
+stationBox(2.6,1.7,.2,15,4.9,10,0xffffff);
+
+const priceTexture=makeTextTexture(
+  ['ADNOC','FUEL'],
+  '#087b45',
+  '#ffffff'
+);
+const priceSign=new THREE.Mesh(
+  new THREE.PlaneGeometry(2.5,1.5),
+  new THREE.MeshStandardMaterial({map:priceTexture,side:THREE.DoubleSide})
+);
+priceSign.position.set(15,4.9,10.12);
+adnoc.add(priceSign);
+
+// شاحنات وسلال مهملات بسيطة
+stationBox(.8,1.2,.8,-15,.7,-18,0x252525);
+stationBox(1,.15,1,-15,1.35,-18,0x087b45);
+
+// لوحة المحطة من الخارج
+const outerSign=new THREE.Mesh(
+  new THREE.PlaneGeometry(5,2),
+  new THREE.MeshStandardMaterial({map:signTexture,side:THREE.DoubleSide})
+);
+outerSign.position.set(-17,5,-5);
+adnoc.add(outerSign);
+
+// =========================
+// السيارات المتحركة
+// =========================
+
+const trafficCars=[];
+
+function createTrafficCar(color,x,z,direction){
+  const group=new THREE.Group();
+  scene.add(group);
+
+  box(group,1.9,.65,3.8,0,.75,0,color);
+  box(group,1.55,.7,1.8,0,1.35,-.1,0x8bb4c5);
+  box(group,.65,.2,.12,-.55,1.6,.83,0xececec);
+  box(group,.65,.2,.12,.55,1.6,.83,0xececec);
+
+  for(const wx of [-.95,.95]){
+    for(const wz of [-1.2,1.2]){
+      const wheel=new THREE.Mesh(
+        new THREE.CylinderGeometry(.38,.38,.22,14),
+        material(0x171717)
+      );
+      wheel.rotation.z=Math.PI/2;
+      wheel.position.set(wx,.42,wz);
+      group.add(wheel);
+    }
+  }
+
+  group.position.set(x,0,z);
+  group.rotation.y=direction>0?0:Math.PI;
+
+  trafficCars.push({
+    group,
+    direction,
+    speed:5+Math.random()*4,
+    startZ:z
+  });
+}
+
+createTrafficCar(0xc62828,-2,80,1);
+createTrafficCar(0xffffff,2,160,-1);
+createTrafficCar(0x202020,-2,280,1);
+createTrafficCar(0x245c9a,2,520,-1);
+createTrafficCar(0xc7a52d,-2,750,1);
+createTrafficCar(0xffffff,2,1000,-1);
+
+function updateTrafficCars(dt){
+  trafficCars.forEach(car=>{
+    car.group.position.z+=car.direction*car.speed*dt;
+
+    if(car.group.position.z>1300)car.group.position.z=-100;
+    if(car.group.position.z< -100)car.group.position.z=1300;
+  });
+}
+
+// =========================
+// السيارة الرئيسية
+// =========================
+
+const car=new THREE.Group();
+scene.add(car);
+
+const bodyPivot=new THREE.Group();
+car.add(bodyPivot);
+
+let carLoaded=false;
+
+const loader=new GLTFLoader();
+
+loader.load(
+  './%D8%AC%D9%8A%20%D9%83%D9%84%D8%A7%D8%B3.glb',
+  gltf=>{
+    const model=gltf.scene;
+    const box3=new THREE.Box3().setFromObject(model);
+    const size=box3.getSize(new THREE.Vector3());
+    const center=box3.getCenter(new THREE.Vector3());
+    const scale=4.3/Math.max(size.x,size.y,size.z);
+
+    model.scale.setScalar(scale);
+    model.position.set(
+      -center.x*scale,
+      -box3.min.y*scale,
+      -center.z*scale
+    );
+
+    model.traverse(o=>{
+      if(o.isMesh){
+        o.castShadow=true;
+        o.receiveShadow=true;
+      }
+    });
+
+    bodyPivot.add(model);
+    carLoaded=true;
+    status.style.display='none';
+  },
+  undefined,
+  error=>{
+    console.error(error);
+    status.innerHTML='تعذر تحميل السيارة. تأكد من وجود ملف جي كلاس.glb بجانب index.html.';
+  }
+);
+
+// =========================
+// الشخصيات والمشاة
+// =========================
+
+function makePerson(clothesColor,skinColor=0xc58b60){
+  const person=new THREE.Group();
+  const clothes=material(clothesColor);
+  const skin=material(skinColor);
+  const dark=material(0x252525);
+
+  const torso=new THREE.Mesh(
+    new THREE.BoxGeometry(.58,.85,.32),clothes
+  );
+  torso.position.y=1.15;
   person.add(torso);
 
-  // الرأس
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.22, 20, 16),
-    skin
+  const head=new THREE.Mesh(
+    new THREE.SphereGeometry(.23,16,16),skin
   );
-  head.position.y = 1.95;
+  head.position.y=1.85;
   person.add(head);
 
-  // الشعر
-  const hair = new THREE.Mesh(
-    new THREE.SphereGeometry(
-      0.225, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.48
-    ),
+  const hair=new THREE.Mesh(
+    new THREE.SphereGeometry(.235,16,10,0,Math.PI*2,0,Math.PI*.48),
     dark
   );
-  hair.position.y = 2.04;
+  hair.position.y=1.94;
   person.add(hair);
 
-  // الذراعان
-  function createArm(x) {
-    const pivot = new THREE.Group();
-    pivot.position.set(x, 1.58, 0);
-    person.add(pivot);
+  const leftArm=new THREE.Group();
+  leftArm.position.set(-.38,1.48,0);
+  person.add(leftArm);
+  const arm1=new THREE.Mesh(
+    new THREE.BoxGeometry(.17,.62,.18),clothes
+  );
+  arm1.position.y=-.28;
+  leftArm.add(arm1);
 
-    const arm = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.085, 0.38, 4, 8),
-      clothes
-    );
-    arm.position.y = -0.25;
-    pivot.add(arm);
+  const rightArm=new THREE.Group();
+  rightArm.position.set(.38,1.48,0);
+  person.add(rightArm);
+  const arm2=new THREE.Mesh(
+    new THREE.BoxGeometry(.17,.62,.18),clothes
+  );
+  arm2.position.y=-.28;
+  rightArm.add(arm2);
 
-    const hand = new THREE.Mesh(
-      new THREE.SphereGeometry(0.085, 12, 10),
-      skin
-    );
-    hand.position.y = -0.53;
-    pivot.add(hand);
+  const leftLeg=new THREE.Group();
+  leftLeg.position.set(-.17,.75,0);
+  person.add(leftLeg);
+  const leg1=new THREE.Mesh(
+    new THREE.BoxGeometry(.2,.7,.23),dark
+  );
+  leg1.position.y=-.34;
+  leftLeg.add(leg1);
 
-    return pivot;
-  }
+  const rightLeg=new THREE.Group();
+  rightLeg.position.set(.17,.75,0);
+  person.add(rightLeg);
+  const leg2=new THREE.Mesh(
+    new THREE.BoxGeometry(.2,.7,.23),dark
+  );
+  leg2.position.y=-.34;
+  rightLeg.add(leg2);
 
-  const leftArm = createArm(-0.36);
-  const rightArm = createArm(0.36);
-
-  // الرجلان والقدمان
-  function createLeg(x) {
-    const pivot = new THREE.Group();
-    pivot.position.set(x, 0.83, 0);
-    person.add(pivot);
-
-    const leg = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.105, 0.43, 5, 8),
-      dark
-    );
-    leg.position.y = -0.28;
-    pivot.add(leg);
-
-    const foot = new THREE.Mesh(
-      new THREE.BoxGeometry(0.22, 0.12, 0.34),
-      dark
-    );
-    foot.position.set(0, -0.55, 0.09);
-    pivot.add(foot);
-
-    return pivot;
-  }
-
-  const leftLeg = createLeg(-0.17);
-  const rightLeg = createLeg(0.17);
-
-  person.userData = {
-    leftArm,
-    rightArm,
-    leftLeg,
-    rightLeg,
-    phase: 0,
-    body: torso,
-    head
-  };
-
+  person.userData={leftArm,rightArm,leftLeg,rightLeg,phase:0};
   return person;
 }
 
-function animatePerson(person, dt, amount, run = false) {
-  const p = person.userData;
-  const intensity = THREE.MathUtils.clamp(amount, 0, 1);
-  const moving = intensity > 0.035;
+const player=makePerson(0xeeeeee);
+player.visible=false;
+scene.add(player);
 
-  if (moving) {
-    p.phase += dt * (run ? 13 : 8);
+function animatePerson(person,dt,amount,run=false){
+  const p=person.userData;
+  const intensity=THREE.MathUtils.clamp(amount,0,1);
+
+  if(intensity<.02){
+    p.leftLeg.rotation.x=THREE.MathUtils.damp(p.leftLeg.rotation.x,0,9,dt);
+    p.rightLeg.rotation.x=THREE.MathUtils.damp(p.rightLeg.rotation.x,0,9,dt);
+    p.leftArm.rotation.x=THREE.MathUtils.damp(p.leftArm.rotation.x,0,9,dt);
+    p.rightArm.rotation.x=THREE.MathUtils.damp(p.rightArm.rotation.x,0,9,dt);
+    return;
   }
 
-  const swing = moving
-    ? Math.sin(p.phase) * (run ? 0.65 : 0.42) * intensity
-    : 0;
-
-  // حركة الرجلين
-  p.leftLeg.rotation.x = THREE.MathUtils.damp(
-    p.leftLeg.rotation.x, swing, 12, dt
-  );
-
-  p.rightLeg.rotation.x = THREE.MathUtils.damp(
-    p.rightLeg.rotation.x, -swing, 12, dt
-  );
-
-  // حركة اليدين بعكس الرجلين
-  p.leftArm.rotation.x = THREE.MathUtils.damp(
-    p.leftArm.rotation.x, -swing * 0.8, 12, dt
-  );
-
-  p.rightArm.rotation.x = THREE.MathUtils.damp(
-    p.rightArm.rotation.x, swing * 0.8, 12, dt
-  );
-
-  // حركة الجسم
-  const bounce = moving
-    ? Math.abs(Math.sin(p.phase * 2)) *
-      (run ? 0.055 : 0.025) * intensity
-    : 0;
-
-  person.position.y = THREE.MathUtils.damp(
-    person.position.y, bounce, 12, dt
-  );
-
-  // ميل الجسم أثناء الركض
-  p.body.rotation.x = THREE.MathUtils.damp(
-    p.body.rotation.x,
-    run && moving ? -0.09 : 0,
-    8,
-    dt
-  );
-
-  // حركة الرأس
-  p.head.rotation.x = THREE.MathUtils.damp(
-    p.head.rotation.x,
-    moving && run ? -0.04 : 0,
-    8,
-    dt
-  );
+  p.phase+=dt*(run?12:7);
+  const swing=Math.sin(p.phase)*(run?.85:.48)*intensity;
+  p.leftLeg.rotation.x=swing;
+  p.rightLeg.rotation.x=-swing;
+  p.leftArm.rotation.x=-swing*.8;
+  p.rightArm.rotation.x=swing*.8;
 }
+
+// شخصيات المحادثة
+const npcs=[];
+
+function addNPC(name,x,z,color,dialogue){
+  const npc=makePerson(color);
+  npc.position.set(x,0,z);
+  npc.rotation.y=Math.PI;
+  scene.add(npc);
+  npcs.push({name,group:npc,dialogue,message:0});
+}
+
+addNPC('سالم',-8.8,30,0x245c9a,[
+  {text:'السلام عليكم! شحالك؟',choices:[
+    ['وعليكم السلام، بخير الحمدلله.','مرحبا والله! عساك بخير.'],
+    ['شو تسوي هني؟','قاعد أتمشى شوي، والجو حلو اليوم.'],
+    ['في أمان الله.','الله يحفظك، نشوفك على خير.']
+  ]}
+]);
+
+addNPC('محمد',8.8,100,0x9b3434,[
+  {text:'مرحبا الساع! تبا مساعدة؟',choices:[
+    ['وين شارع دبي؟','كمل سيده وبتحصل اللوحة على اليسار.'],
+    ['لا مشكور.','حياك الله بأي وقت.'],
+    ['شو اسمك؟','أنا محمد، تشرفنا يا طويل العمر.']
+  ]}
+]);
+
+addNPC('خالد',-8.8,210,0x236c48,[
+  {text:'هلا خوي، ما شاء الله عليك سيارة حلوة!',choices:[
+    ['تسلم، من ذوقك.','الله يسلمك، تستاهل الطيب.'],
+    ['تعرف وين أقرب محطة؟','محطة أدنوك موجودة على يمين الشارع.'],
+    ['مع السلامة.','في أمان الله.']
+  ]}
+]);
+
+addNPC('راشد',8.8,300,0x777777,[
+  {text:'السلام عليكم يا الغالي.',choices:[
+    ['وعليكم السلام.','مرحبا ملايين.'],
+    ['شو عندك اليوم؟','ما عندي شي، بس أتمشى.'],
+    ['مع السلامة.','الله وياك.']
+  ]}
+]);
+
+// =========================
+// وضع اللعبة
+// =========================
+
+let walkingMode=false;
+let running=false;
+let nearbyNPC=null;
+let currentNPC=null;
+
+let playerHeading=0;
+let playerSpeed=0;
+let playerTargetSpeed=0;
+
+let throttle=0;
+let braking=0;
+let steering=0;
+let stickY=0;
+
+let speed=0;
+let heading=0;
+let lateral=0;
+
+function exitCar(){
+  if(!carLoaded)return;
+  if(Math.abs(speed)>1)return;
+
+  walkingMode=true;
+  speed=0;
+  throttle=0;
+  braking=0;
+
+  player.position.set(
+    car.position.x+Math.cos(heading)*2,
+    0,
+    car.position.z-Math.sin(heading)*2
+  );
+
+  playerHeading=heading;
+  player.rotation.y=playerHeading;
+  player.visible=true;
+
+  modeText.textContent='وضع المشي';
+  document.querySelector('.pedals').style.display='none';
+  runBtn.style.display='block';
+  exitBtn.textContent='🚙 ركوب السيارة';
+  help.textContent='استخدم العصا للمشي والاتجاهات';
+}
+
+function enterCar(){
+  const distance=player.position.distanceTo(car.position);
+
+  if(distance>5){
+    showMessage('قرب من السيارة عشان تركب');
+    return;
+  }
+
+  walkingMode=false;
+  running=false;
+  player.visible=false;
+  playerSpeed=0;
+  playerTargetSpeed=0;
+
+  document.querySelector('.pedals').style.display='flex';
+  runBtn.style.display='none';
+  talkBtn.style.display='none';
+  modeText.textContent='تجربة القيادة';
+  exitBtn.textContent='🚶 نزول من السيارة';
+  help.textContent='اسحب الشاشة لتدوير الكاميرا';
+}
+
+function showMessage(message){
+  status.textContent=message;
+  status.style.display='block';
+  setTimeout(()=>status.style.display='none',1800);
+}
+
+exitBtn.addEventListener('click',()=>{
+  if(!walkingMode)exitCar();
+  else enterCar();
+});
+
+// زر الركض
+runBtn.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  if(walkingMode)running=true;
+});
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{
+  runBtn.addEventListener(ev,()=>running=false);
+});
+
+// المحادثات
+function openChat(npc){
+  currentNPC=npc;
+  const line=npc.dialogue[npc.message%npc.dialogue.length];
+
+  $('chatName').textContent='👤 '+npc.name;
+  $('chatText').textContent=line.text;
+
+  const choices=$('chatChoices');
+  choices.innerHTML='';
+
+  line.choices.forEach(choice=>{
+    const btn=document.createElement('button');
+    btn.className='chatChoice';
+    btn.textContent=choice[0];
+
+    btn.addEventListener('click',()=>{
+      $('chatText').textContent='أنت: '+choice[0]+'\n\n'+npc.name+': '+choice[1];
+      choices.innerHTML='';
+
+      const next=document.createElement('button');
+      next.className='chatChoice';
+      next.textContent='متابعة المحادثة';
+      next.onclick=()=>{
+        npc.message++;
+        openChat(npc);
+      };
+      choices.appendChild(next);
+    });
+
+    choices.appendChild(btn);
+  });
+
+  chatBox.style.display='block';
+  talkBtn.style.display='none';
+}
+
+$('closeChat').addEventListener('click',()=>{
+  chatBox.style.display='none';
+  currentNPC=null;
+});
+
+// =========================
+// التعبئة في ADNOC
+// =========================
+
+function getStationDistance(){
+  const stationPosition=new THREE.Vector3(
+    adnoc.position.x,
+    0,
+    adnoc.position.z
+  );
+  return car.position.distanceTo(stationPosition);
+}
+
+$('fuelBtn').addEventListener('click',()=>{
+  if(walkingMode)return;
+
+  if(fuel>=100){
+    showMessage('خزان الوقود ممتلئ!');
+    return;
+  }
+
+  if(Math.abs(speed)>1){
+    showMessage('وقف السيارة أول عشان تعبي');
+    return;
+  }
+
+  const needed=100-fuel;
+  const price=Math.ceil(needed*1.5);
+
+  if(money<price){
+    showMessage('رصيدك ما يكفي للتعبئة!');
+    return;
+  }
+
+  money-=price;
+  fuel=100;
+  updateMoney();
+  updateFuel();
+  showMessage('تم تعبئة الوقود في ADNOC! ⛽');
+});
+
+// =========================
+// الكاميرا
+// =========================
+
+let cameraMode=0;
+let cameraAngle=0;
+let cameraHeight=3.2;
+let cameraDistance=8;
+
+let dragging=false;
+let lastX=0,lastY=0;
+
+const cameraBtn=$('cameraBtn');
+
+cameraBtn.addEventListener('click',()=>{
+  if(walkingMode)return;
+
+  cameraMode=1-cameraMode;
+  cameraBtn.textContent=cameraMode===0
+    ?'📷 الكاميرا: خارجية'
+    :'📷 الكاميرا: داخلية';
+});
+
+renderer.domElement.addEventListener('pointerdown',e=>{
+  dragging=true;
+  lastX=e.clientX;
+  lastY=e.clientY;
+});
+
+window.addEventListener('pointerup',()=>dragging=false);
+
+window.addEventListener('pointermove',e=>{
+  if(!dragging||cameraMode===1||chatBox.style.display==='block')return;
+
+  cameraAngle-=(e.clientX-lastX)*.006;
+  cameraHeight=THREE.MathUtils.clamp(
+    cameraHeight+(e.clientY-lastY)*.025,1.5,9
+  );
+
+  lastX=e.clientX;
+  lastY=e.clientY;
+});
+
+// =========================
+// التحكم
+// =========================
+
+const stick=$('stick');
+const knob=$('knob');
+
+let stickId=null;
+
+stick.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  stickId=e.pointerId;
+  stick.setPointerCapture(e.pointerId);
+  moveStick(e);
+});
+
+stick.addEventListener('pointermove',e=>{
+  if(e.pointerId===stickId)moveStick(e);
+});
+
+function moveStick(e){
+  const r=stick.getBoundingClientRect();
+
+  let dx=e.clientX-(r.left+r.width/2);
+  let dy=e.clientY-(r.top+r.height/2);
+
+  const max=38;
+  const len=Math.hypot(dx,dy);
+
+  if(len>max){
+    dx=dx/len*max;
+    dy=dy/len*max;
+  }
+
+  steering=dx/max;
+  stickY=dy/max;
+
+  knob.style.left=(31+dx)+'px';
+  knob.style.top=(31+dy)+'px';
+}
+
+function resetStick(){
+  stickId=null;
+  steering=0;
+  stickY=0;
+  knob.style.left='31px';
+  knob.style.top='31px';
+}
+
+stick.addEventListener('pointerup',resetStick);
+stick.addEventListener('pointercancel',resetStick);
+
+function hold(id,cb){
+  const el=$(id);
+
+  el.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    el.setPointerCapture(e.pointerId);
+    cb(true);
+  });
+
+  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{
+    el.addEventListener(ev,()=>cb(false));
+  });
+}
+
+hold('gas',v=>throttle=v?1:0);
+hold('brake',v=>braking=v?1:0);
+
+const keys={};
+
+addEventListener('keydown',e=>{
+  keys[e.key.toLowerCase()]=true;
+});
+
+addEventListener('keyup',e=>{
+  keys[e.key.toLowerCase()]=false;
+});
+
+// =========================
+// الحلقة الرئيسية
+// =========================
+
+let last=performance.now();
+
+function animate(now){
+  requestAnimationFrame(animate);
+
+  const dt=Math.min((now-last)/1000,.04);
+  last=now;
+
+  updateTrafficLights(dt);
+  updateTrafficCars(dt);
+
+  if(!walkingMode){
+    const gas=throttle||(keys.w||keys.arrowup?1:0);
+    const brake=braking||(keys.s||keys.arrowdown?1:0);
+
+    let steer=steering;
+
+    if(keys.a||keys.arrowleft)steer=-1;
+    if(keys.d||keys.arrowright)steer=1;
+
+    if(gas){
+      if(speed<0)speed=Math.min(0,speed+13*dt);
+      else speed+=7.5*dt;
+    }else if(brake){
+      if(speed>0)speed=Math.max(0,speed-16*dt);
+      else speed-=3.8*dt;
+    }else{
+      speed*=Math.pow(.985,dt*60);
+    }
+
+    // استهلاك الوقود
+    if(Math.abs(speed)>.1&&fuel>0){
+      fuel-=Math.abs(speed)*.000035*dt*60;
+      fuel=Math.max(0,fuel);
+      updateFuel();
+    }
+
+    if(fuel<=0){
+      speed=THREE.MathUtils.damp(speed,0,2,dt);
+    }
+
+    speed=THREE.MathUtils.clamp(speed,-7,32);
+
+    if(Math.abs(speed)>.08){
+      const steerPower=THREE.MathUtils.lerp(
+        1,.38,Math.min(Math.abs(speed)/32,1)
+      );
+
+      heading-=steer*1.05*steerPower*dt*Math.sign(speed);
+
+      car.position.x+=Math.sin(heading)*speed*dt+
+        Math.cos(heading)*lateral*dt;
+
+      car.position.z+=Math.cos(heading)*speed*dt-
+        Math.sin(heading)*lateral*dt;
+    }
+
+    lateral+=steer*speed*.035*dt*60;
+    lateral*=Math.pow(.82,dt*60);
+
+    car.rotation.y=heading;
+
+    const targetPitch=gas&&speed>=0?-.025:brake&&speed>0?.045:0;
+    const targetRoll=-steer*Math.min(Math.abs(speed)/32,1)*.055;
+    const bob=Math.sin(now*.012)*Math.min(Math.abs(speed)/32,.35)*.012;
+
+    bodyPivot.rotation.x=THREE.MathUtils.damp(
+      bodyPivot.rotation.x,targetPitch,5,dt
+    );
+
+    bodyPivot.rotation.z=THREE.MathUtils.damp(
+      bodyPivot.rotation.z,targetRoll,4,dt
+    );
+
+    bodyPivot.position.y=THREE.MathUtils.damp(
+      bodyPivot.position.y,bob,5,dt
+    );
+
+    const angle=heading+cameraAngle;
+
+    if(cameraMode===0){
+      const desired=new THREE.Vector3(
+        car.position.x-Math.sin(angle)*cameraDistance,
+        car.position.y+cameraHeight,
+        car.position.z-Math.cos(angle)*cameraDistance
+      );
+
+      camera.position.lerp(desired,1-Math.exp(-7*dt));
+
+      camera.lookAt(
+        car.position.x,
+        car.position.y+1.1,
+        car.position.z
+      );
+    }else{
+      const front=new THREE.Vector3(
+        car.position.x+Math.sin(heading)*.3,
+        car.position.y+1.45,
+        car.position.z+Math.cos(heading)*.3
+      );
+
+      camera.position.lerp(front,1-Math.exp(-7*dt));
+
+      camera.lookAt(
+        car.position.x+Math.sin(heading)*12,
+        car.position.y+1.5,
+        car.position.z+Math.cos(heading)*12
+      );
+    }
+
+    speedDisplay.textContent=Math.round(Math.abs(speed)*3.6);
+
+    // زر التعبئة يظهر قرب محطة أدنوك
+    const stationDistance=getStationDistance();
+
+    $('fuelBtn').style.display=
+      stationDistance<24?'block':'none';
+
+  }else if(chatBox.style.display!=='block'){
+    let inputX=steering;
+    let inputForward=-stickY;
+
+    if(keys.w||keys.arrowup)inputForward=1;
+    if(keys.s||keys.arrowdown)inputForward=-1;
+    if(keys.a||keys.arrowleft)inputX=-1;
+    if(keys.d||keys.arrowright)inputX=1;
+
+    const inputLength=Math.hypot(inputX,inputForward);
+
+    if(inputLength>1){
+      inputX/=inputLength;
+      inputForward/=inputLength;
+    }
+
+    const moving=inputLength>.08;
+    const maxSpeed=running?6.2:2.2;
+
+    playerTargetSpeed=moving?maxSpeed*inputLength:0;
+
+    playerSpeed=THREE.MathUtils.damp(
+      playerSpeed,
+      playerTargetSpeed,
+      moving?5:8,
+      dt
+    );
+
+    if(moving){
+      const moveX=
+        inputX*Math.cos(playerHeading)+
+        inputForward*Math.sin(playerHeading);
+
+      const moveZ=
+        -inputX*Math.sin(playerHeading)+
+        inputForward*Math.cos(playerHeading);
+
+      const targetHeading=Math.atan2(moveX,moveZ);
+
+      const angleDiff=Math.atan2(
+        Math.sin(targetHeading-playerHeading),
+        Math.cos(targetHeading-playerHeading)
+      );
+
+      playerHeading+=angleDiff*(1-Math.exp(-9*dt));
+
+      player.position.x+=moveX*playerSpeed*dt;
+      player.position.z+=moveZ*playerSpeed*dt;
+
+      player.position.x=THREE.MathUtils.clamp(
+        player.position.x,-10,35
+      );
+
+      player.rotation.y=playerHeading;
+    }
+
+    animatePerson(player,dt,playerSpeed/6.2,running);
+
+    const distance=running?5.8:5.2;
+
+    const desiredCamera=new THREE.Vector3(
+      player.position.x-Math.sin(playerHeading)*distance,
+      running?3.4:3.1,
+      player.position.z-Math.cos(playerHeading)*distance
+    );
+
+    camera.position.lerp(
+      desiredCamera,
+      1-Math.exp(-4.5*dt)
+    );
+
+    camera.lookAt(
+      player.position.x,
+      1.25,
+      player.position.z
+    );
+
+    nearbyNPC=null;
+    let nearest=5;
+
+    npcs.forEach(npc=>{
+      const d=player.position.distanceTo(npc.group.position);
+
+      if(d<nearest){
+        nearest=d;
+        nearbyNPC=npc;
+      }
+    });
+
+    talkBtn.style.display=nearbyNPC?'block':'none';
+
+  }else{
+    playerSpeed=THREE.MathUtils.damp(playerSpeed,0,8,dt);
+    animatePerson(player,dt,playerSpeed/6.2,running);
+  }
+
+  if(walkingMode){
+    speedDisplay.textContent='0';
+    $('fuelBtn').style.display='none';
+  }
+
+  renderer.render(scene,camera);
+}
+
+talkBtn.addEventListener('click',()=>{
+  if(nearbyNPC)openChat(nearbyNPC);
+});
+
+requestAnimationFrame(animate);
+
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+</script>
+</body>
+</html>
