@@ -78,15 +78,10 @@ import {GLTFLoader} from 'https://esm.sh/three@0.185.0/examples/jsm/loaders/GLTF
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('selectstart',e=>e.preventDefault());
 
-const status=document.getElementById('status');
-const controls=document.getElementById('controls');
-const exitBtn=document.getElementById('exitBtn');
-const runBtn=document.getElementById('runBtn');
-const talkBtn=document.getElementById('talkBtn');
-const chatBox=document.getElementById('chatBox');
-const speedDisplay=document.getElementById('speed');
-const modeText=document.getElementById('modeText');
-const help=document.getElementById('help');
+const $=id=>document.getElementById(id);
+const status=$('status'),controls=$('controls'),exitBtn=$('exitBtn');
+const runBtn=$('runBtn'),talkBtn=$('talkBtn'),chatBox=$('chatBox');
+const speedDisplay=$('speed'),modeText=$('modeText'),help=$('help');
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x9bc9e8);
@@ -139,7 +134,8 @@ roadBox(.25,.13,10000,7.05,.02,0,0x55585b);
 roadBox(.13,.025,10000,-6.25,.09,0,0xffffff);
 roadBox(.13,.025,10000,6.25,.09,0,0xffffff);
 
-for(let z=-5000;z<5000;z+=12)roadBox(.16,.035,5,0,.095,z,0xf5f5f5);
+for(let z=-5000;z<5000;z+=12)
+  roadBox(.16,.035,5,0,.095,z,0xf5f5f5);
 
 roadBox(3,.28,10000,-8.8,.08,0,0xb9b9b9);
 roadBox(3,.28,10000,8.8,.08,0,0xb9b9b9);
@@ -170,7 +166,9 @@ function createLamp(x,z){
 
   const lamp=new THREE.Mesh(
     new THREE.BoxGeometry(.55,.16,.35),
-    new THREE.MeshStandardMaterial({color:0xfff1c4,emissive:0xffd987,emissiveIntensity:1.2})
+    new THREE.MeshStandardMaterial({
+      color:0xfff1c4,emissive:0xffd987,emissiveIntensity:1.2
+    })
   );
   lamp.position.set(x+inward*1.25,5.7,z);
   roadGroup.add(lamp);
@@ -183,7 +181,8 @@ for(let z=-4900;z<=4900;z+=45){
 
 function createSpeedBump(z){
   const colors=[0xf5c400,0x202020];
-  for(let i=0;i<8;i++)roadBox(1.75,.16,.65,-6.125+i*1.75,.13,z,colors[i%2]);
+  for(let i=0;i<8;i++)
+    roadBox(1.75,.16,.65,-6.125+i*1.75,.13,z,colors[i%2]);
 }
 [-180,180,540,900,1260,1620,1980].forEach(createSpeedBump);
 
@@ -214,7 +213,9 @@ function createRoadSign(x,z,arabic,english,color){
 
   const panel=new THREE.Mesh(
     new THREE.PlaneGeometry(3.5,1.75),
-    new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(canvas),side:THREE.DoubleSide})
+    new THREE.MeshStandardMaterial({
+      map:new THREE.CanvasTexture(canvas),side:THREE.DoubleSide
+    })
   );
   panel.position.set(x,3.45,z);
   roadGroup.add(panel);
@@ -246,7 +247,9 @@ function createSpeedSign(x,z,limit){
 
   const mesh=new THREE.Mesh(
     new THREE.PlaneGeometry(1.55,1.55),
-    new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(canvas),side:THREE.DoubleSide})
+    new THREE.MeshStandardMaterial({
+      map:new THREE.CanvasTexture(canvas),side:THREE.DoubleSide
+    })
   );
   mesh.position.set(x,2.8,z);
   roadGroup.add(mesh);
@@ -261,11 +264,11 @@ createSpeedSign(8.2,875,60);
 
 const junctionZ=420;
 roadBox(34,.12,14,0,.015,junctionZ,0x292d32);
-for(let x=-5.5;x<=5.5;x+=2.2)roadBox(.85,.04,1.5,x,.105,junctionZ-9,0xffffff);
+for(let x=-5.5;x<=5.5;x+=2.2)
+  roadBox(.85,.04,1.5,x,.105,junctionZ-9,0xffffff);
 
 const signalBulbs=[];
-let signalPhase=0;
-let signalTimer=0;
+let signalPhase=0,signalTimer=0;
 
 function createTrafficLight(x,z){
   const pole=new THREE.Mesh(
@@ -276,11 +279,12 @@ function createTrafficLight(x,z){
   roadGroup.add(pole);
   roadBox(.55,1.65,.55,x,4.65,z,0x17191b);
 
-  const colors=[0xff2020,0xffc400,0x20c85a];
-  colors.forEach((color,index)=>{
+  [0xff2020,0xffc400,0x20c85a].forEach((color,index)=>{
     const bulb=new THREE.Mesh(
       new THREE.SphereGeometry(.17,16,12),
-      new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:index===0?1.3:.04})
+      new THREE.MeshStandardMaterial({
+        color,emissive:color,emissiveIntensity:index===0?1.3:.04
+      })
     );
     bulb.position.set(x,5.2-index*.53,z+.29);
     roadGroup.add(bulb);
@@ -446,7 +450,6 @@ addNPC('راشد',8.8,300,0x777777,[
 function animatePerson(person,dt,moveAmount,run){
   const p=person.userData;
   if(!p)return;
-
   const intensity=THREE.MathUtils.clamp(moveAmount,0,1);
 
   if(intensity<.02){
@@ -459,7 +462,6 @@ function animatePerson(person,dt,moveAmount,run){
 
   p.phase+=dt*(run?12:7);
   const swing=Math.sin(p.phase)*(run?.85:.48)*intensity;
-
   p.leftLeg.rotation.x=swing;
   p.rightLeg.rotation.x=-swing;
   p.leftArm.rotation.x=-swing*.8;
@@ -471,7 +473,6 @@ let walkingMode=false;
 let running=false;
 let nearbyNPC=null;
 let currentNPC=null;
-
 let playerHeading=0;
 let playerSpeed=0;
 let playerTargetSpeed=0;
@@ -496,9 +497,8 @@ function exitCar(){
   player.visible=true;
 
   modeText.textContent='وضع المشي';
-  document.getElementById('speedUnit').textContent='KM/H';
+  $('speedUnit').textContent='KM/H';
   speedDisplay.textContent='0';
-
   document.querySelector('.pedals').style.display='none';
   runBtn.style.display='block';
   exitBtn.textContent='🚙 ركوب السيارة';
@@ -507,7 +507,6 @@ function exitCar(){
 
 function enterCar(){
   const distance=player.position.distanceTo(car.position);
-
   if(distance>5){
     status.textContent='قرب من السيارة عشان تركب';
     status.style.display='block';
@@ -520,11 +519,9 @@ function enterCar(){
   player.visible=false;
   playerSpeed=0;
   playerTargetSpeed=0;
-
   document.querySelector('.pedals').style.display='flex';
   runBtn.style.display='none';
   talkBtn.style.display='none';
-
   modeText.textContent='تجربة القيادة';
   exitBtn.textContent='🚶 نزول من السيارة';
   help.textContent='اسحب الشاشة لتدوير الكاميرا';
@@ -548,11 +545,10 @@ runBtn.addEventListener('pointerdown',e=>{
 function openChat(npc){
   currentNPC=npc;
   const line=npc.dialogue[npc.message%npc.dialogue.length];
+  $('chatName').textContent='👤 '+npc.name;
+  $('chatText').textContent=line.text;
 
-  document.getElementById('chatName').textContent='👤 '+npc.name;
-  document.getElementById('chatText').textContent=line.text;
-
-  const choices=document.getElementById('chatChoices');
+  const choices=$('chatChoices');
   choices.innerHTML='';
 
   line.choices.forEach(choice=>{
@@ -561,9 +557,7 @@ function openChat(npc){
     btn.textContent=choice[0];
 
     btn.addEventListener('click',()=>{
-      document.getElementById('chatText').textContent=
-        'أنت: '+choice[0]+'\n\n'+npc.name+': '+choice[1];
-
+      $('chatText').textContent='أنت: '+choice[0]+'\n\n'+npc.name+': '+choice[1];
       choices.innerHTML='';
 
       const next=document.createElement('button');
@@ -575,7 +569,6 @@ function openChat(npc){
       };
       choices.appendChild(next);
     });
-
     choices.appendChild(btn);
   });
 
@@ -583,7 +576,7 @@ function openChat(npc){
   talkBtn.style.display='none';
 }
 
-document.getElementById('closeChat').addEventListener('click',()=>{
+$('closeChat').addEventListener('click',()=>{
   chatBox.style.display='none';
   currentNPC=null;
 });
@@ -593,18 +586,16 @@ let cameraMode=0;
 let cameraAngle=0;
 let cameraHeight=3.2;
 let cameraDistance=8;
-
 let dragging=false;
-let lastX=0;
-let lastY=0;
-
-const cameraBtn=document.getElementById('cameraBtn');
+let lastX=0,lastY=0;
+const cameraBtn=$('cameraBtn');
 
 cameraBtn.addEventListener('click',()=>{
   if(walkingMode)return;
-
   cameraMode=1-cameraMode;
-  cameraBtn.textContent=cameraMode===0?'📷 الكاميرا: خارجية':'📷 الكاميرا: داخلية';
+  cameraBtn.textContent=cameraMode===0
+    ?'📷 الكاميرا: خارجية'
+    :'📷 الكاميرا: داخلية';
 });
 
 renderer.domElement.addEventListener('pointerdown',e=>{
@@ -612,30 +603,23 @@ renderer.domElement.addEventListener('pointerdown',e=>{
   lastX=e.clientX;
   lastY=e.clientY;
 });
-
 window.addEventListener('pointerup',()=>dragging=false);
 
 window.addEventListener('pointermove',e=>{
   if(!dragging||cameraMode===1||chatBox.style.display==='block')return;
-
   cameraAngle-=(e.clientX-lastX)*.006;
-  cameraHeight=THREE.MathUtils.clamp(cameraHeight+(e.clientY-lastY)*.025,1.5,9);
-
+  cameraHeight=THREE.MathUtils.clamp(
+    cameraHeight+(e.clientY-lastY)*.025,1.5,9
+  );
   lastX=e.clientX;
   lastY=e.clientY;
 });
 
 // التحكم
-let throttle=0;
-let braking=0;
-let steering=0;
-let stickY=0;
-let speed=0;
-let heading=0;
-let lateral=0;
+let throttle=0,braking=0,steering=0,stickY=0;
+let speed=0,heading=0,lateral=0;
 
-const stick=document.getElementById('stick');
-const knob=document.getElementById('knob');
+const stick=$('stick'),knob=$('knob');
 let stickId=null;
 
 stick.addEventListener('pointerdown',e=>{
@@ -644,7 +628,6 @@ stick.addEventListener('pointerdown',e=>{
   stick.setPointerCapture(e.pointerId);
   moveStick(e);
 });
-
 stick.addEventListener('pointermove',e=>{
   if(e.pointerId===stickId)moveStick(e);
 });
@@ -653,9 +636,7 @@ function moveStick(e){
   const r=stick.getBoundingClientRect();
   let dx=e.clientX-(r.left+r.width/2);
   let dy=e.clientY-(r.top+r.height/2);
-
-  const max=38;
-  const len=Math.hypot(dx,dy);
+  const max=38,len=Math.hypot(dx,dy);
 
   if(len>max){
     dx=dx/len*max;
@@ -664,7 +645,6 @@ function moveStick(e){
 
   steering=dx/max;
   stickY=dy/max;
-
   knob.style.left=(31+dx)+'px';
   knob.style.top=(31+dy)+'px';
 }
@@ -681,14 +661,12 @@ stick.addEventListener('pointerup',resetStick);
 stick.addEventListener('pointercancel',resetStick);
 
 function hold(id,cb){
-  const el=document.getElementById(id);
-
+  const el=$(id);
   el.addEventListener('pointerdown',e=>{
     e.preventDefault();
     el.setPointerCapture(e.pointerId);
     cb(true);
   });
-
   ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>{
     el.addEventListener(ev,()=>cb(false));
   });
@@ -706,14 +684,11 @@ let last=performance.now();
 
 function animate(now){
   requestAnimationFrame(animate);
-
   const dt=Math.min((now-last)/1000,.04);
   last=now;
-
   updateTrafficLights(dt);
 
   if(!walkingMode){
-
     const gas=throttle||(keys.w||keys.arrowup?1:0);
     const brake=braking||(keys.s||keys.arrowdown?1:0);
 
@@ -736,14 +711,12 @@ function animate(now){
     if(Math.abs(speed)>.08){
       const steerPower=THREE.MathUtils.lerp(1,.38,Math.min(Math.abs(speed)/32,1));
       heading-=steer*1.05*steerPower*dt*Math.sign(speed);
-
       car.position.x+=Math.sin(heading)*speed*dt+Math.cos(heading)*lateral*dt;
       car.position.z+=Math.cos(heading)*speed*dt-Math.sin(heading)*lateral*dt;
     }
 
     lateral+=steer*speed*.035*dt*60;
     lateral*=Math.pow(.82,dt*60);
-
     car.rotation.y=heading;
 
     const targetPitch=gas&&speed>=0?-.025:brake&&speed>0?.045:0;
@@ -781,7 +754,6 @@ function animate(now){
     speedDisplay.textContent=Math.round(Math.abs(speed)*3.6);
 
   }else if(chatBox.style.display!=='block'){
-
     // قراءة اتجاه العصا
     let inputX=steering;
     let inputForward=-stickY;
@@ -792,7 +764,6 @@ function animate(now){
     if(keys.d||keys.arrowright)inputX=1;
 
     const inputLength=Math.hypot(inputX,inputForward);
-
     if(inputLength>1){
       inputX/=inputLength;
       inputForward/=inputLength;
@@ -800,22 +771,16 @@ function animate(now){
 
     const moving=inputLength>.08;
     const maxSpeed=running?6.2:2.2;
-
     playerTargetSpeed=moving?maxSpeed*inputLength:0;
 
     // تسارع وتوقف تدريجي
     playerSpeed=THREE.MathUtils.damp(
-      playerSpeed,
-      playerTargetSpeed,
-      moving?5:8,
-      dt
+      playerSpeed,playerTargetSpeed,moving?5:8,dt
     );
 
     if(moving){
-
       const moveX=inputX*Math.cos(playerHeading)+inputForward*Math.sin(playerHeading);
       const moveZ=-inputX*Math.sin(playerHeading)+inputForward*Math.cos(playerHeading);
-
       const targetHeading=Math.atan2(moveX,moveZ);
 
       let angleDiff=Math.atan2(
@@ -824,24 +789,16 @@ function animate(now){
       );
 
       playerHeading+=angleDiff*(1-Math.exp(-9*dt));
-
       player.position.x+=moveX*playerSpeed*dt;
       player.position.z+=moveZ*playerSpeed*dt;
-
       player.position.x=THREE.MathUtils.clamp(player.position.x,-10,10);
       player.rotation.y=playerHeading;
     }
 
-    animatePerson(
-      player,
-      dt,
-      playerSpeed/6.2,
-      running
-    );
+    animatePerson(player,dt,playerSpeed/6.2,running);
 
     // كاميرا تتبع اللاعب
     const distance=running?5.8:5.2;
-
     const desiredCamera=new THREE.Vector3(
       player.position.x-Math.sin(playerHeading)*distance,
       running?3.4:3.1,
@@ -849,17 +806,11 @@ function animate(now){
     );
 
     camera.position.lerp(desiredCamera,1-Math.exp(-4.5*dt));
-
-    camera.lookAt(
-      player.position.x,
-      1.25,
-      player.position.z
-    );
+    camera.lookAt(player.position.x,1.25,player.position.z);
 
     // أقرب شخصية
     nearbyNPC=null;
     let nearest=5;
-
     npcs.forEach(npc=>{
       const d=player.position.distanceTo(npc.group.position);
       if(d<nearest){
@@ -877,7 +828,6 @@ function animate(now){
   }
 
   if(walkingMode)speedDisplay.textContent='0';
-
   renderer.render(scene,camera);
 }
 
