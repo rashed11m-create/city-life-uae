@@ -186,8 +186,10 @@ for(let z=-5000;z<5000;z+=4){
   roadBox(2.8,.025,.08,8.8,.235,z,0x999999);
 }
 
-// أعمدة الإنارة
+// أعمدة الإنارة - اتجاه اللمبات للداخل
 function createLamp(x,z){
+  const inward=x<0?1:-1;
+
   const pole=new THREE.Mesh(
     new THREE.CylinderGeometry(.075,.11,6,10),
     new THREE.MeshStandardMaterial({
@@ -204,7 +206,7 @@ function createLamp(x,z){
       color:0x555b60,metalness:.5
     })
   );
-  arm.position.set(x+(x<0?-.65:.65),5.8,z);
+  arm.position.set(x+inward*.65,5.8,z);
   roadGroup.add(arm);
 
   const lamp=new THREE.Mesh(
@@ -215,13 +217,205 @@ function createLamp(x,z){
       emissiveIntensity:1.2
     })
   );
-  lamp.position.set(x+(x<0?-1.25:1.25),5.7,z);
+  lamp.position.set(x+inward*1.25,5.7,z);
   roadGroup.add(lamp);
 }
 
 for(let z=-4900;z<=4900;z+=45){
   createLamp(-10.8,z);
   createLamp(10.8,z);
+}
+
+// مطبات السرعة
+function createSpeedBump(z){
+  const colors=[0xf5c400,0x202020];
+
+  for(let i=0;i<8;i++){
+    roadBox(
+      1.75,.16,.65,
+      -6.125+i*1.75,
+      .13,z,
+      colors[i%2]
+    );
+  }
+}
+
+[-180,180,540,900,1260,1620,1980].forEach(createSpeedBump);
+
+// لوحات الطرق
+function createRoadSign(x,z,arabic,english,color){
+  const pole=new THREE.Mesh(
+    new THREE.CylinderGeometry(.07,.09,3.3,8),
+    new THREE.MeshStandardMaterial({color:0x777777,metalness:.4})
+  );
+  pole.position.set(x,1.65,z);
+  roadGroup.add(pole);
+
+  const canvas=document.createElement('canvas');
+  canvas.width=512;
+  canvas.height=256;
+
+  const ctx=canvas.getContext('2d');
+
+  ctx.fillStyle=color;
+  ctx.fillRect(0,0,512,256);
+
+  ctx.strokeStyle='white';
+  ctx.lineWidth=12;
+  ctx.strokeRect(7,7,498,242);
+
+  ctx.fillStyle='white';
+  ctx.textAlign='center';
+  ctx.direction='rtl';
+  ctx.font='bold 45px Arial';
+  ctx.fillText(arabic,256,105);
+
+  ctx.direction='ltr';
+  ctx.font='bold 36px Arial';
+  ctx.fillText(english,256,175);
+
+  const texture=new THREE.CanvasTexture(canvas);
+
+  const panel=new THREE.Mesh(
+    new THREE.PlaneGeometry(3.5,1.75),
+    new THREE.MeshStandardMaterial({
+      map:texture,
+      side:THREE.DoubleSide
+    })
+  );
+
+  panel.position.set(x,3.45,z);
+  roadGroup.add(panel);
+}
+
+// لوحات السرعة
+function createSpeedSign(x,z,limit){
+  const pole=new THREE.Mesh(
+    new THREE.CylinderGeometry(.06,.08,2.7,8),
+    new THREE.MeshStandardMaterial({color:0x777777})
+  );
+
+  pole.position.set(x,1.35,z);
+  roadGroup.add(pole);
+
+  const canvas=document.createElement('canvas');
+  canvas.width=256;
+  canvas.height=256;
+
+  const ctx=canvas.getContext('2d');
+
+  ctx.fillStyle='white';
+  ctx.beginPath();
+  ctx.arc(128,128,112,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.strokeStyle='#d71920';
+  ctx.lineWidth=18;
+  ctx.stroke();
+
+  ctx.fillStyle='#111';
+  ctx.font='bold 90px Arial';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText(String(limit),128,128);
+
+  const mesh=new THREE.Mesh(
+    new THREE.PlaneGeometry(1.55,1.55),
+    new THREE.MeshStandardMaterial({
+      map:new THREE.CanvasTexture(canvas),
+      side:THREE.DoubleSide
+    })
+  );
+
+  mesh.position.set(x,2.8,z);
+  roadGroup.add(mesh);
+}
+
+// مواقع اللوحات
+createRoadSign(-8.2,95,'دبي','DUBAI - EXIT 12','#087b45');
+createRoadSign(8.2,335,'عجمان','AJMAN - MAIN ROAD','#087b45');
+createRoadSign(-8.2,695,'شارع رئيسي','MAIN ROAD','#087b45');
+
+createSpeedSign(8.2,155,60);
+createSpeedSign(-8.2,515,80);
+createSpeedSign(8.2,875,60);
+
+// تقاطع وممر مشاة
+const junctionZ=420;
+
+roadBox(34,.12,14,0,.015,junctionZ,0x292d32);
+
+for(let x=-5.5;x<=5.5;x+=2.2){
+  roadBox(.85,.04,1.5,x,.105,junctionZ-9,0xffffff);
+}
+
+// إشارات المرور
+const signalBulbs=[];
+let signalPhase=0;
+let signalTimer=0;
+
+function createTrafficLight(x,z){
+  const pole=new THREE.Mesh(
+    new THREE.CylinderGeometry(.09,.12,5.2,10),
+    new THREE.MeshStandardMaterial({
+      color:0x44484c,metalness:.5
+    })
+  );
+
+  pole.position.set(x,2.6,z);
+  roadGroup.add(pole);
+
+  roadBox(.55,1.65,.55,x,4.65,z,0x17191b);
+
+  const colors=[
+    0xff2020,
+    0xffc400,
+    0x20c85a
+  ];
+
+  colors.forEach((color,index)=>{
+    const bulb=new THREE.Mesh(
+      new THREE.SphereGeometry(.17,16,12),
+      new THREE.MeshStandardMaterial({
+        color:color,
+        emissive:color,
+        emissiveIntensity:index===0?1.3:.04
+      })
+    );
+
+    bulb.position.set(x,5.2-index*.53,z+.29);
+    roadGroup.add(bulb);
+
+    signalBulbs.push({
+      mesh:bulb,
+      index:index
+    });
+  });
+}
+
+createTrafficLight(-7.5,junctionZ-10);
+createTrafficLight(7.5,junctionZ-10);
+
+// تغيير ألوان الإشارة بالتتابع
+function updateTrafficLights(dt){
+  signalTimer+=dt;
+
+  if(signalPhase===0 && signalTimer>=6){
+    signalPhase=1;
+    signalTimer=0;
+  }else if(signalPhase===1 && signalTimer>=2){
+    signalPhase=2;
+    signalTimer=0;
+  }else if(signalPhase===2 && signalTimer>=6){
+    signalPhase=0;
+    signalTimer=0;
+  }
+
+  signalBulbs.forEach(item=>{
+    const active=item.index===signalPhase;
+
+    item.mesh.material.emissiveIntensity=active?1.5:.04;
+  });
 }
 
 // السيارة
@@ -282,6 +476,7 @@ const cameraBtn=document.getElementById('cameraBtn');
 
 cameraBtn.addEventListener('click',()=>{
   cameraMode=1-cameraMode;
+
   cameraBtn.textContent=cameraMode===0
     ?'📷 الكاميرا: خارجية'
     :'📷 الكاميرا: داخلية';
@@ -323,6 +518,7 @@ const knob=document.getElementById('knob');
 let stickId=null;
 
 stick.addEventListener('pointerdown',e=>{
+  e.preventDefault();
   stickId=e.pointerId;
   stick.setPointerCapture(e.pointerId);
   moveStick(e);
@@ -392,10 +588,13 @@ function animate(now){
   const dt=Math.min((now-last)/1000,.04);
   last=now;
 
+  updateTrafficLights(dt);
+
   const gas=throttle||(keys.w||keys.arrowup?1:0);
   const brake=braking||(keys.s||keys.arrowdown?1:0);
 
   let steer=steering;
+
   if(keys.a||keys.arrowleft)steer=-1;
   if(keys.d||keys.arrowright)steer=1;
 
