@@ -19,12 +19,12 @@ canvas{display:block}
 button{width:72px;height:72px;border-radius:50%;border:2px solid white;color:white;font-weight:bold;background:#172b43dd;touch-action:none}
 #gas{background:#159b59}
 #brake{background:#bd3030}
-#status{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#101923dd;color:white;padding:15px 20px;border-radius:12px;z-index:5}
+#status{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#101923ed;color:white;padding:17px 20px;border-radius:12px;z-index:5;text-align:center;max-width:85%;line-height:1.7}
 </style>
 </head>
 <body>
 
-<div id="status">جاري تجهيز المدينة...</div>
+<div id="status">جاري تحميل خريطة دبي...<br>يرجى الانتظار</div>
 
 <div id="hud">
  <div class="box">
@@ -49,11 +49,13 @@ button{width:72px;height:72px;border-radius:50%;border:2px solid white;color:whi
 <script type="module">
 import * as THREE from 'https://esm.sh/three@0.185.0';
 
+const status = document.getElementById('status');
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9bc9e8);
-scene.fog = new THREE.Fog(0x9bc9e8,180,650);
+scene.fog = new THREE.Fog(0x9bc9e8,500,2500);
 
-const camera = new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,1000);
+const camera = new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,5000);
 
 const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
 renderer.setSize(innerWidth,innerHeight);
@@ -64,155 +66,276 @@ document.body.appendChild(renderer.domElement);
 
 scene.add(new THREE.HemisphereLight(0xe5f3ff,0x6b6658,2));
 
-const sun = new THREE.DirectionalLight(0xffedcf,3);
-sun.position.set(-100,180,100);
+const sun = new THREE.DirectionalLight(0xffedcf,2.5);
+sun.position.set(-500,900,500);
 sun.castShadow = true;
 scene.add(sun);
 
-function mat(color,roughness=.8,metalness=0){
+function material(color,roughness=.8,metalness=0){
  return new THREE.MeshStandardMaterial({color,roughness,metalness});
 }
 
-function box(w,h,d,color,x,y,z){
- const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));
- m.position.set(x,y,z);
- m.castShadow = true;
- m.receiveShadow = true;
- scene.add(m);
- return m;
+const centerLat = 25.1972;
+const centerLon = 55.2744;
+const cosLat = Math.cos(centerLat*Math.PI/180);
+
+function positionFromGPS(lat,lon){
+ return new THREE.Vector3(
+  (lon-centerLon)*111320*cosLat,
+  0,
+  -(lat-centerLat)*111320
+ );
 }
 
 // الأرض
 const ground = new THREE.Mesh(
- new THREE.PlaneGeometry(1200,1200),
- mat(0xb5aa91)
+ new THREE.PlaneGeometry(4000,4000),
+ material(0xc6b99d)
 );
-ground.rotation.x = -Math.PI/2;
-ground.receiveShadow = true;
+ground.rotation.x=-Math.PI/2;
+ground.position.y=-.15;
 scene.add(ground);
 
-// الشوارع
-box(800,.12,42,0x292c31,0,.02,0);
-box(42,.12,800,0x292c31,0,.03,0);
+// طرق الخريطة
+function addRoad(a,b,width=7){
+ const dx=b.x-a.x;
+ const dz=b.z-a.z;
+ const length=Math.hypot(dx,dz);
+ if(length<.1)return;
 
-for(let i=-380;i<380;i+=13){
- box(5,.035,.22,0xe8dfc9,i,.1,0);
- box(.22,.035,5,0xe8dfc9,0,.1,i);
+ const road=new THREE.Mesh(
+  new THREE.BoxGeometry(width,.12,length),
+  material(0x30343a)
+ );
+ road.position.set((a.x+b.x)/2,.01,(a.z+b.z)/2);
+ road.rotation.y=Math.atan2(dx,dz);
+ scene.add(road);
 }
 
-// المباني
-const colors=[0xc5b9a7,0x9babb4,0xd4c8b5,0x777f86,0xb5a58e];
+// المباني من بيانات الخريطة
+function addBuilding(points,tags={}){
+ if(points.length<3)return;
 
-function building(x,z,w,d,h,color){
- const group = new THREE.Group();
+ const shape=new THREE.Shape();
+ shape.moveTo(points[0].x,points[0].z);
 
- const body = new THREE.Mesh(
-  new THREE.BoxGeometry(w,h,d),
-  mat(color,.55)
+ for(let i=1;i<points.length;i++){
+  shape.lineTo(points[i].x,points[i].z);
+ }
+
+ shape.closePath();
+
+ const height=Number(tags.height) ||
+  (Number(tags['building:levels']) ? Number(tags['building:levels'])*3.2 : 12+Math.random()*30);
+
+ const geometry=new THREE.ExtrudeGeometry(shape,{
+  depth:height,
+  bevelEnabled:false
+ });
+
+ // تحويل اتجاه المجسم إلى الأعلى
+ geometry.rotateX(Math.PI/2);
+
+ const building=new THREE.Mesh(
+  geometry,
+  material(0xb7b6b0,.65,.12)
  );
- body.position.y=h/2;
- body.castShadow=true;
- group.add(body);
 
- for(let r=0;r<Math.floor(h/3.5);r++){
-  for(let c=0;c<Math.floor(w/2.5);c++){
-   const win = new THREE.Mesh(
-    new THREE.BoxGeometry(.85,1.3,.06),
-    mat(0x8eb9c9,.25,.25)
-   );
-   win.position.set(-w/2+1.3+c*2.5,2+r*3.5,d/2+.04);
-   group.add(win);
+ building.position.y=0;
+ building.castShadow=true;
+ building.receiveShadow=true;
+ scene.add(building);
+}
+
+// تحميل بيانات OpenStreetMap
+async function loadDubaiMap(){
+ const south=25.181;
+ const west=55.260;
+ const north=25.210;
+ const east=55.292;
+
+ const query=`
+ [out:json][timeout:45];
+ (
+  way["highway"](${south},${west},${north},${east});
+  way["building"](${south},${west},${north},${east});
+ );
+ out body;
+ >;
+ out skel qt;
+ `;
+
+ const endpoints=[
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter'
+ ];
+
+ let data=null;
+
+ for(const url of endpoints){
+  try{
+   const response=await fetch(url,{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'data='+encodeURIComponent(query)
+   });
+
+   if(!response.ok)throw new Error('Map server error');
+   data=await response.json();
+   break;
+  }catch(e){
+   console.warn('Map server failed:',url,e);
   }
  }
 
- group.position.set(x,0,z);
+ if(!data)throw new Error('تعذر الاتصال بخدمة الخريطة');
+
+ const nodes=new Map();
+ const ways=[];
+
+ for(const item of data.elements){
+  if(item.type==='node'){
+   nodes.set(item.id,positionFromGPS(item.lat,item.lon));
+  }
+  if(item.type==='way')ways.push(item);
+ }
+
+ let roads=0;
+ let buildings=0;
+
+ for(const way of ways){
+  const points=way.nodes.map(id=>nodes.get(id)).filter(Boolean);
+  if(points.length<2)continue;
+
+  if(way.tags && way.tags.highway){
+   let width=7;
+   const type=way.tags.highway;
+
+   if(type==='motorway'||type==='trunk')width=15;
+   else if(type==='primary'||type==='secondary')width=11;
+   else if(type==='residential'||type==='service')width=6;
+
+   for(let i=0;i<points.length-1;i++){
+    addRoad(points[i],points[i+1],width);
+   }
+   roads++;
+  }
+
+  if(way.tags && way.tags.building && points.length>=3){
+   addBuilding(points,way.tags);
+   buildings++;
+  }
+ }
+
+ return {roads,buildings};
+}
+
+// معالم دبي
+function createLandmark(lat,lon,width,height,depth,color){
+ const p=positionFromGPS(lat,lon);
+ const mesh=new THREE.Mesh(
+  new THREE.BoxGeometry(width,height,depth),
+  material(color,.35,.25)
+ );
+ mesh.position.set(p.x,height/2,p.z);
+ mesh.castShadow=true;
+ scene.add(mesh);
+ return mesh;
+}
+
+// برج خليفة - مجسم مبدئي
+function createBurj(){
+ const p=positionFromGPS(25.1972,55.2744);
+ const group=new THREE.Group();
+
+ const levels=[
+  [55,40,90],
+  [43,34,100],
+  [32,27,120],
+  [23,20,130],
+  [14,13,130],
+  [7,7,110]
+ ];
+
+ let y=0;
+
+ for(const [w,d,h] of levels){
+  const part=new THREE.Mesh(
+   new THREE.BoxGeometry(w,h,d),
+   material(0x9bbdcb,.25,.4)
+  );
+  part.position.y=y+h/2;
+  group.add(part);
+  y+=h;
+ }
+
+ const tip=new THREE.Mesh(
+  new THREE.ConeGeometry(3,90,12),
+  material(0xc8d8df,.3,.5)
+ );
+ tip.position.y=y+45;
+ group.add(tip);
+
+ group.position.set(p.x,0,p.z);
  scene.add(group);
 }
 
-for(let x=-160;x<=160;x+=38){
- for(let z=-160;z<=160;z+=38){
-  if(Math.abs(x)<35||Math.abs(z)<35)continue;
-  const h=20+Math.random()*95;
-  building(x,z,18,18,h,colors[Math.floor(Math.random()*colors.length)]);
- }
-}
-
-// برج طويل مستوحى من أفق دبي
-const tower = new THREE.Group();
-let y=0;
-
-for(const [w,d,h] of [[24,20,30],[19,16,40],[15,13,45],[11,10,40],[7,7,35],[4,4,30]]){
- const part = new THREE.Mesh(
-  new THREE.BoxGeometry(w,h,d),
-  mat(0xa8c6d5,.25,.3)
+// دبي مول - مجسم مبدئي
+function createDubaiMall(){
+ const p=positionFromGPS(25.1985,55.2796);
+ const mall=new THREE.Mesh(
+  new THREE.BoxGeometry(180,14,120),
+  material(0xb6a994)
  );
- part.position.y=y+h/2;
- tower.add(part);
- y+=h;
+ mall.position.set(p.x,7,p.z);
+ mall.castShadow=true;
+ scene.add(mall);
 }
 
-const spire = new THREE.Mesh(
- new THREE.ConeGeometry(1.3,40,12),
- mat(0xc6d3d9,.3,.5)
-);
-spire.position.y=y+20;
-tower.add(spire);
-tower.position.set(80,0,-100);
-scene.add(tower);
-
-// نخيل
-function palm(x,z){
- const trunk = new THREE.Mesh(
-  new THREE.CylinderGeometry(.22,.4,5,8),
-  mat(0x886044)
+// نافورة دبي - مجسم مبدئي
+function createFountain(){
+ const p=positionFromGPS(25.1955,55.275);
+ const water=new THREE.Mesh(
+  new THREE.CircleGeometry(35,48),
+  new THREE.MeshStandardMaterial({
+   color:0x319bc4,
+   roughness:.2,
+   metalness:.3
+  })
  );
- trunk.position.set(x,2.5,z);
- scene.add(trunk);
-
- for(let i=0;i<7;i++){
-  const leaf = new THREE.Mesh(
-   new THREE.BoxGeometry(.5,.15,4),
-   mat(0x287344)
-  );
-  leaf.position.set(
-   x+Math.sin(i*Math.PI/3.5)*1.4,
-   5,
-   z+Math.cos(i*Math.PI/3.5)*1.4
-  );
-  leaf.rotation.y=i*Math.PI/3.5;
-  scene.add(leaf);
- }
+ water.rotation.x=-Math.PI/2;
+ water.position.set(p.x,.1,p.z);
+ scene.add(water);
 }
 
-for(let i=-130;i<140;i+=18){
- palm(i,27);
- palm(i,-27);
-}
+createBurj();
+createDubaiMall();
+createFountain();
 
-// سيارة مبدئية مصنوعة داخل اللعبة
-const car = new THREE.Group();
-scene.add(car);
+// السيارة
+const car=new THREE.Group();
 
-const body = new THREE.Mesh(
+const body=new THREE.Mesh(
  new THREE.BoxGeometry(2.2,.8,4.5),
- mat(0x111820,.3,.5)
+ material(0x111820,.3,.5)
 );
 body.position.y=.85;
 car.add(body);
 
-const cabin = new THREE.Mesh(
+const cabin=new THREE.Mesh(
  new THREE.BoxGeometry(1.8,.85,2.2),
- mat(0x263e50,.2,.4)
+ material(0x263e50,.2,.4)
 );
 cabin.position.set(0,1.55,-.2);
 car.add(cabin);
 
 const wheels=[];
+
 for(const x of [-1.15,1.15]){
  for(const z of [-1.4,1.4]){
-  const wheel = new THREE.Mesh(
+  const wheel=new THREE.Mesh(
    new THREE.CylinderGeometry(.42,.42,.3,20),
-   mat(0x111111)
+   material(0x111111)
   );
   wheel.rotation.z=Math.PI/2;
   wheel.position.set(x,.48,z);
@@ -221,7 +344,11 @@ for(const x of [-1.15,1.15]){
  }
 }
 
-car.position.set(0,0,8);
+scene.add(car);
+
+// نبدأ قريب من وسط داون تاون
+const start=positionFromGPS(25.196,55.270);
+car.position.set(start.x,0,start.z);
 
 // التحكم
 let throttle=0,braking=0,steering=0,speed=0,heading=0;
@@ -278,21 +405,36 @@ hold('gas',v=>throttle=v?1:0);
 hold('brake',v=>braking=v?1:0);
 
 const keys={};
+
 addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 
-// الكاميرا
-camera.position.set(0,7,-14);
+// تحميل الخريطة
+loadDubaiMap().then(result=>{
+ status.innerHTML=
+  'تم تحميل خريطة دبي!<br>'+
+  'الشوارع: '+result.roads+
+  '<br>المباني: '+result.buildings;
+ setTimeout(()=>status.style.display='none',2500);
+}).catch(error=>{
+ console.error(error);
+ status.innerHTML=
+  'تعذر تحميل بيانات الخريطة.<br>'+
+  'تأكد من اتصال الإنترنت وحاول إعادة تحميل الصفحة.';
+});
 
+// الكاميرا
 let last=performance.now();
 
 function animate(now){
  requestAnimationFrame(animate);
+
  const dt=Math.min((now-last)/1000,.04);
  last=now;
 
  const gas=throttle||(keys.w||keys.arrowup?1:0);
  const brake=braking||(keys.s||keys.arrowdown?1:0);
+
  let steer=steering;
 
  if(keys.a||keys.arrowleft)steer=-1;
@@ -322,7 +464,8 @@ function animate(now){
  camera.position.lerp(target,1-Math.pow(.001,dt));
  camera.lookAt(car.position.x,car.position.y+1.2,car.position.z);
 
- document.getElementById('speed').textContent=Math.round(Math.abs(speed)*3.6);
+ document.getElementById('speed').textContent=
+  Math.round(Math.abs(speed)*3.6);
 
  renderer.render(scene,camera);
 }
@@ -334,8 +477,6 @@ addEventListener('resize',()=>{
  camera.updateProjectionMatrix();
  renderer.setSize(innerWidth,innerHeight);
 });
-
-document.getElementById('status').style.display='none';
 </script>
 </body>
 </html>
